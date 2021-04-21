@@ -1,0 +1,55 @@
+{
+  "name": "hardhat-circom",
+  "version": "0.0.1",
+  "description": "(unofficial) Hardhat plugin for iden3 circom and snarkjs build process",
+  "repository": "github:projectsophon/hardhat-circom",
+  "author": "Jacob Rosenthal",
+  "license": "GPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "keywords": [
+    "snarkjs",
+    "iden3",
+    "circom",
+    "hardhat",
+    "hardhat-plugin"
+  ],
+  "scripts": {
+    "prepare": "tsc -p . && cpy ./src/Verifier.sol.template dist",
+    "lint:fix": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}' && tslint --fix --config tslint.json --project tsconfig.json",
+    "lint": "tslint --config tslint.json --project tsconfig.json",
+    "test": "mocha --exit --recursive 'test/**/*.test.ts'",
+    "format": "prettier --write .",
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "files": [
+    "dist/src/",
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
+  "dependencies": {
+    "circom": "https://github.com/phated/circom#master",
+    "circomlib": "^0.2.4",
+    "snarkjs": "^0.3.60"
+  },
+  "peerDependencies": {
+    "hardhat": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.14",
+    "@types/mocha": "^8.2.0",
+    "@types/node": "^14.14.22",
+    "chai": "^4.2.0",
+    "cpy-cli": "3.1.1",
+    "hardhat": "^2.0.0",
+    "mocha": "^8.0.1",
+    "prettier": "^2.2.1",
+    "ts-node": "^8.1.0",
+    "tslint": "^5.16.0",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-plugin-prettier": "^2.0.1",
+    "typescript": "^3.9.7"
+  }
+}
