@@ -30,7 +30,7 @@
     "README.md"
   ],
   "dependencies": {
-    "circom": "https://github.com/phated/circom#master",
+    "circom": "0.5.45",
     "circomlib": "^0.2.4",
     "snarkjs": "^0.3.60"
   },
