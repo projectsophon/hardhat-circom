@@ -7,13 +7,6 @@
   "license": "GPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "keywords": [
-    "snarkjs",
-    "iden3",
-    "circom",
-    "hardhat",
-    "hardhat-plugin"
-  ],
   "scripts": {
     "prepare": "tsc -p . && cpy ./src/Verifier.sol.template dist",
     "lint": "exit 0",
@@ -37,6 +30,7 @@
     "hardhat": "^2.0.0"
   },
   "devDependencies": {
+    "@projectsophon/prettier-config": "0.0.0",
     "@projectsophon/tsconfig": "0.0.0",
     "@types/chai": "^4.2.14",
     "@types/mocha": "^8.2.0",
@@ -48,5 +42,13 @@
     "prettier": "^2.2.1",
     "ts-node": "^8.1.0",
     "typescript": "^3.9.7"
-  }
+  },
+  "prettier": "@projectsophon/prettier-config",
+  "keywords": [
+    "snarkjs",
+    "iden3",
+    "circom",
+    "hardhat",
+    "hardhat-plugin"
+  ]
 }
