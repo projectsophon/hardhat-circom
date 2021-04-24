@@ -1,15 +1,10 @@
 // Visit https://aka.ms/tsconfig.json for all config options
 {
+  "extends": "@projectsophon/tsconfig",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "strict": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src"
+  ]
 }
