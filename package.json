@@ -16,8 +16,7 @@
   ],
   "scripts": {
     "prepare": "tsc -p . && cpy ./src/Verifier.sol.template dist",
-    "lint:fix": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}' && tslint --fix --config tslint.json --project tsconfig.json",
-    "lint": "tslint --config tslint.json --project tsconfig.json",
+    "lint": "exit 0",
     "test": "mocha --exit --recursive 'test/**/*.test.ts'",
     "format": "prettier --write .",
     "build": "tsc",
@@ -48,9 +47,6 @@
     "mocha": "^8.0.1",
     "prettier": "^2.2.1",
     "ts-node": "^8.1.0",
-    "tslint": "^5.16.0",
-    "tslint-config-prettier": "^1.18.0",
-    "tslint-plugin-prettier": "^2.0.1",
     "typescript": "^3.9.7"
   }
 }
