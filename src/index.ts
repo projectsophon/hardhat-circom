@@ -1,18 +1,64 @@
-// @ts-ignore because they don't ship types
-import * as circomCompiler from "circom";
-import { promises as fs } from "fs";
+import * as path from "path";
+import * as fs from "fs/promises";
 import { extendConfig, task } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
-import {
+import type {
   HardhatConfig,
   HardhatRuntimeEnvironment,
   HardhatUserConfig,
 } from "hardhat/types";
-import * as path from "path";
+
 // @ts-ignore because they don't ship types
 import * as snarkjs from "snarkjs";
+// @ts-ignore because they don't ship types
+import * as circomCompiler from "circom";
 
-import "./type-extensions";
+// Add our types to the Hardhat config
+declare module "hardhat/types/config" {
+  interface HardhatUserConfig {
+    circom?: CircomUserConfig;
+  }
+
+  interface HardhatConfig {
+    circom: CircomConfig;
+  }
+}
+
+export interface CircomCircuitUserConfig {
+  name?: string;
+  circuit?: string;
+  input?: string;
+  ptau?: string;
+  wasm?: string;
+  zkey?: string;
+  beacon?: string;
+}
+
+export interface CircomCircuitConfig {
+  name: string;
+  circuit: string;
+  input: string;
+  ptau: string;
+  wasm: string;
+  zkey: string;
+  beacon: string;
+}
+
+export interface CircomUserConfig {
+  verifierTemplatePath?: string;
+  verifierOutName?: string;
+  circuitInputBasePath?: string;
+  circuitOutputBasePath?: string;
+  circuits?: CircomCircuitUserConfig[];
+}
+
+export interface CircomConfig {
+  verifierTemplatePath: string;
+  verifier: string;
+  circuitInputBasePath: string;
+  circuitOutputBasePath: string;
+  circuits: CircomCircuitConfig[];
+}
 
 export const TASK_CIRCOM = "circom";
 

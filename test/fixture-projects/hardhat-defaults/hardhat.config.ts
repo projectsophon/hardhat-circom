@@ -1,7 +1,7 @@
 // We load the plugin here.
-import { HardhatUserConfig } from "hardhat/types";
+import type { HardhatUserConfig } from "hardhat/types";
 
-import "../../../src/index";
+import "../../../";
 
 const config: HardhatUserConfig = {
   solidity: "0.6.7",

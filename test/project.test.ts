@@ -1,14 +1,8 @@
-// tslint:disable-next-line no-implicit-dependencies
+// TODO: None of the path tests are cross platform
+import * as path from "path";
 import { assert } from "chai";
 import { resetHardhatContext } from "hardhat/plugins-testing";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
-import path from "path";
-
-declare module "mocha" {
-  interface Context {
-    hre: HardhatRuntimeEnvironment;
-  }
-}
+import type { HardhatRuntimeEnvironment } from "hardhat/types";
 
 describe("Hardhat Circom", function () {
   describe("Test Defaults", function () {
@@ -17,7 +11,7 @@ describe("Hardhat Circom", function () {
         path.join(__dirname, "fixture-projects", "hardhat-defaults")
       );
 
-      this.hre = require("hardhat");
+      this.hre = require("hardhat") as HardhatRuntimeEnvironment;
     });
 
     afterEach("Resetting hardhat", function () {
@@ -86,7 +80,7 @@ describe("Hardhat Circom", function () {
     it("Should use default verifier input path", function () {
       assert.isTrue(
         this.hre.config.circom.verifierTemplatePath.includes(
-          "hardhat-circom/src/Verifier.sol.template"
+          "hardhat-circom/dist/Verifier.sol.template"
         )
       );
     });
@@ -98,7 +92,7 @@ describe("Hardhat Circom", function () {
         path.join(__dirname, "fixture-projects", "hardhat-overrides")
       );
 
-      this.hre = require("hardhat");
+      this.hre = require("hardhat") as HardhatRuntimeEnvironment;
     });
 
     afterEach("Resetting hardhat", function () {
