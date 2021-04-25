@@ -250,7 +250,7 @@ function normalize(basePath: string | undefined, userPath: string | undefined): 
     return undefined;
   } else {
     if (path.isAbsolute(userPath)) {
-      normalPath = userPath;
+      normalPath = path.normalize(userPath);
     } else {
       if (basePath === undefined) {
         return undefined;

@@ -4,6 +4,13 @@ import { assert } from "chai";
 import { resetHardhatContext } from "hardhat/plugins-testing";
 import type { HardhatRuntimeEnvironment } from "hardhat/types";
 
+function assertPathIncludes(config: string, unixPath: string) {
+  assert.include(config, path.normalize(unixPath));
+}
+function assertPathEquals(config: string, unixPath: string) {
+  assert.equal(config, path.normalize(unixPath));
+}
+
 describe("Hardhat Circom", function () {
   describe("Test Defaults", function () {
     beforeEach("Loading hardhat environment", function () {
@@ -31,35 +38,35 @@ describe("Hardhat Circom", function () {
 
     it("Should use default circuitInputBasePath and circuit name", function () {
       const first = this.hre.config.circom.circuits[0];
-      assert.isTrue(first.circuit.includes("/hardhat-defaults/circuits/hash.circom"));
+      assertPathIncludes(first.circuit, "/hardhat-defaults/circuits/hash.circom");
     });
 
     it("Should use default circuitInputBasePath and input name", function () {
       const first = this.hre.config.circom.circuits[0];
-      assert.isTrue(first.input.includes("/hardhat-defaults/circuits/hash.json"));
+      assertPathIncludes(first.input, "/hardhat-defaults/circuits/hash.json");
     });
 
     it("Should use default circuitInputBasePath and ptau name", function () {
       const first = this.hre.config.circom.circuits[0];
-      assert.isTrue(first.ptau.includes("/hardhat-defaults/circuits/hash.ptau"));
+      assertPathIncludes(first.ptau, "/hardhat-defaults/circuits/hash.ptau");
     });
 
     it("Should use default circuitOutputBasePath and wasm name", function () {
       const first = this.hre.config.circom.circuits[0];
-      assert.isTrue(first.wasm.includes("/hardhat-defaults/client/public/hash.wasm"));
+      assertPathIncludes(first.wasm, "/hardhat-defaults/client/public/hash.wasm");
     });
 
     it("Should use default circuitOutputBasePath and zkey name", function () {
       const first = this.hre.config.circom.circuits[0];
-      assert.isTrue(first.zkey.includes("/hardhat-defaults/client/public/hash.zkey"));
+      assertPathIncludes(first.zkey, "/hardhat-defaults/client/public/hash.zkey");
     });
 
     it("Should use default verifier output name", function () {
-      assert.isTrue(this.hre.config.circom.verifier.includes("/hardhat-defaults/contracts/Verifier.sol"));
+      assertPathIncludes(this.hre.config.circom.verifier, "/hardhat-defaults/contracts/Verifier.sol");
     });
 
     it("Should use default verifier input path", function () {
-      assert.isTrue(this.hre.config.circom.verifierTemplatePath.includes("hardhat-circom/dist/Verifier.sol.template"));
+      assertPathIncludes(this.hre.config.circom.verifierTemplatePath, "hardhat-circom/dist/Verifier.sol.template");
     });
   });
 
@@ -89,35 +96,35 @@ describe("Hardhat Circom", function () {
 
     it("Should override circuitInputBasePath and circuit name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assert.equal(third.circuit, "/circuits/circuit.circom");
+      assertPathEquals(third.circuit, "/circuits/circuit.circom");
     });
 
     it("Should override circuitInputBasePath and input name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assert.equal(third.input, "/circuits/input.json");
+      assertPathEquals(third.input, "/circuits/input.json");
     });
 
     it("Should override circuitInputBasePath and ptau name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assert.equal(third.ptau, "/circuits/pot15_final.ptau");
+      assertPathEquals(third.ptau, "/circuits/pot15_final.ptau");
     });
 
     it("Should override circuitOutputBasePath and wasm name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assert.equal(third.wasm, "/client/public/circuit.wasm");
+      assertPathEquals(third.wasm, "/client/public/circuit.wasm");
     });
 
     it("Should override circuitOutputBasePath and zkey name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assert.equal(third.zkey, "/client/public/circuit.zkey");
+      assertPathEquals(third.zkey, "/client/public/circuit.zkey");
     });
 
     it("Should override verifier output name", function () {
-      assert.equal(this.hre.config.circom.verifier, "/contracts/VerifierContract.sol");
+      assertPathEquals(this.hre.config.circom.verifier, "/contracts/VerifierContract.sol");
     });
 
     it("Should override verifier input path", function () {
-      assert.equal(this.hre.config.circom.verifierTemplatePath, "/contracts/Verifier.sol.template");
+      assertPathEquals(this.hre.config.circom.verifierTemplatePath, "/contracts/Verifier.sol.template");
     });
   });
 });
