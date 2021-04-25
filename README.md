@@ -116,3 +116,7 @@ circuit.wasm
 ```
 
 Note the new optional beacon field, for use with `--deterministic` builds (instead of the default all 0s beacon.
+
+## Advanced Templating
+
+You can hook the `TASK_CIRCOM_TEMPLATE` to implement your own more complex templating.
