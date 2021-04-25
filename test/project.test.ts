@@ -46,9 +46,8 @@ describe("Hardhat Circom", function () {
       assertPathIncludes(first.input, "/hardhat-defaults/circuits/hash.json");
     });
 
-    it("Should use default circuitInputBasePath and ptau name", function () {
-      const first = this.hre.config.circom.circuits[0];
-      assertPathIncludes(first.ptau, "/hardhat-defaults/circuits/hash.ptau");
+    it("Should use default ptau path", function () {
+      assertPathIncludes(this.hre.config.circom.ptauPath, "/hardhat-defaults/circuits/circom.ptau");
     });
 
     it("Should use default circuitOutputBasePath and wasm name", function () {
@@ -104,9 +103,8 @@ describe("Hardhat Circom", function () {
       assertPathEquals(third.input, "/circuits/input.json");
     });
 
-    it("Should override circuitInputBasePath and ptau name", function () {
-      const third = this.hre.config.circom.circuits[2];
-      assertPathEquals(third.ptau, "/circuits/pot15_final.ptau");
+    it("Should override ptau name", function () {
+      assertPathEquals(this.hre.config.circom.ptauPath, "/circuits/pot15_final.ptau");
     });
 
     it("Should override circuitOutputBasePath and wasm name", function () {

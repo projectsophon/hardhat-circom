@@ -24,7 +24,6 @@ export interface CircomCircuitUserConfig {
   name?: string;
   circuit?: string;
   input?: string;
-  ptau?: string;
   wasm?: string;
   zkey?: string;
   beacon?: string;
@@ -34,13 +33,13 @@ export interface CircomCircuitConfig {
   name: string;
   circuit: string;
   input: string;
-  ptau: string;
   wasm: string;
   zkey: string;
   beacon: string;
 }
 
 export interface CircomUserConfig {
+  ptauPath?: string;
   verifierTemplatePath?: string;
   verifierOutName?: string;
   circuitInputBasePath?: string;
@@ -49,6 +48,7 @@ export interface CircomUserConfig {
 }
 
 export interface CircomConfig {
+  ptauPath: string;
   verifierTemplatePath: string;
   verifier: string;
   circuitInputBasePath: string;
@@ -80,6 +80,8 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
     normalize(config.paths.root, userConfig.circom.circuitOutputBasePath) ?? defaultcircuitOutputBasePath;
 
   config.circom = {
+    ptauPath:
+      normalize(config.paths.root, userConfig.circom?.ptauPath) ?? path.join(normalizedUserInput, "circom.ptau"),
     circuitInputBasePath: normalizedUserInput,
     circuitOutputBasePath: normalizedUserOutput,
     verifierTemplatePath:
@@ -110,8 +112,6 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
         path.join(defaultcircuitInputBasePath, `${circuit.name}.circom`),
       input:
         normalize(normalizedUserInput, circuit.input) ?? path.join(defaultcircuitInputBasePath, `${circuit.name}.json`),
-      ptau:
-        normalize(normalizedUserInput, circuit.ptau) ?? path.join(defaultcircuitInputBasePath, `${circuit.name}.ptau`),
       wasm:
         normalize(normalizedUserOutput, circuit.wasm) ??
         path.join(defaultcircuitOutputBasePath, `${circuit.name}.wasm`),
@@ -148,7 +148,7 @@ async function circomCompile(
   for (const circuit of hre.config.circom.circuits) {
     const inputString = (await fs.readFile(circuit.input)).toString();
     const input = JSON.parse(inputString);
-    const ptau = await fs.readFile(circuit.ptau);
+    const ptau = await fs.readFile(hre.config.circom.ptauPath);
 
     const r1cs: MemFastFile = { type: "mem" };
     const wasm: MemFastFile = { type: "mem" };

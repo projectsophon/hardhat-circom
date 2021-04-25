@@ -12,6 +12,7 @@ const config: HardhatUserConfig = {
   },
   circom: {
     verifierTemplatePath: "/contracts/Verifier.sol.template",
+    ptauPath: "/circuits/pot15_final.ptau",
     verifierOutName: "VerifierContract.sol", // Output path is hardcoded to hardhat artifact directory
     circuitInputBasePath: "/circuits",
     circuitOutputBasePath: "/client/public",
@@ -27,7 +28,6 @@ const config: HardhatUserConfig = {
         name: "init",
         circuit: "circuit.circom",
         input: "input.json",
-        ptau: "pot15_final.ptau",
         wasm: "circuit.wasm",
         zkey: "circuit.zkey",
       },

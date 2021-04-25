@@ -62,7 +62,7 @@ The `/best_dapp_ever/circuits` directory would look like this:
 
 ```bash
 j:~/best_dapp_ever/circuits $ ls
-init.circom  init.json  init.ptau
+init.circom  init.json  circom.ptau
 ```
 
 Then using `npx hardhat circom --verbose` turns your `Verifier.sol.template` into `Verifier.sol` and outputs the files:
@@ -80,6 +80,7 @@ You can overide all of these settings to name every and input and output:
 module.exports = {
   circom: {
     verifierTemplatePath: "./contracts/Verifier.sol.template",
+    ptauPath: "./mycircuits/pot15_final.ptau",
     verifierOutName: "Verifier.sol", // Output path is hardcoded to hardhat artifact directory
     circuitInputBasePath: "./mycircuits/",
     circuitOutputBasePath: "./public/",
@@ -88,7 +89,6 @@ module.exports = {
         name: "init",
         circuit: "init/circuit.circom",
         input: "init/input.json",
-        ptau: "init/pot15_final.ptau",
         wasm: "circuits/init/circuit.wasm",
         zkey: "init.zkey",
         beacon: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
@@ -101,8 +101,11 @@ module.exports = {
 Assuming this circuits directory structure:
 
 ```bash
+j:~/best_dapp_ever/mycircuits/ $ ls
+pot15_final.ptau init
+j:~/best_dapp_ever/mycircuits/ $ cd init
 j:~/best_dapp_ever/mycircuits/init $ ls
-circuit.circom  input.json  pot15_final.ptau
+circuit.circom  input.json
 ```
 
 Outputs files:
