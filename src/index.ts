@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs/promises";
-import { extendConfig, task, subtask, types } from "hardhat/config";
+import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
 
@@ -8,6 +8,18 @@ import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from
 import * as snarkjs from "snarkjs";
 // @ts-ignore because they don't ship types
 import * as circomCompiler from "circom";
+
+declare module "hardhat/types/runtime" {
+  interface HardhatRuntimeEnvironment {
+    circom: { [key: string]: unknown };
+    snarkjs: { [key: string]: unknown };
+  }
+}
+
+extendEnvironment((hre) => {
+  hre.circom = circomCompiler;
+  hre.snarkjs = snarkjs;
+});
 
 // Add our types to the Hardhat config
 declare module "hardhat/types/config" {
