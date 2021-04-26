@@ -64,6 +64,12 @@ interface MemFastFile {
   data?: Uint8Array;
 }
 
+interface ZkeyFastFile {
+  type: "mem";
+  name: string;
+  data: Uint8Array;
+}
+
 extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
   if (!userConfig.circom || !userConfig.circom.circuits || userConfig.circom.circuits.length === 0) {
     throw new HardhatPluginError(
@@ -144,6 +150,7 @@ async function circomCompile(
     await fs.mkdir(path.join(debugPath), { recursive: true });
   }
 
+  const zkeys = [];
   for (const circuit of hre.config.circom.circuits) {
     const inputString = (await fs.readFile(circuit.input)).toString();
     const input = JSON.parse(inputString);
@@ -196,9 +203,11 @@ async function circomCompile(
 
     await fs.mkdir(path.dirname(circuit.zkey), { recursive: true });
     await fs.writeFile(circuit.zkey, finalZkey.data ?? new Uint8Array());
+
+    zkeys.push({ type: "mem", name: circuit.name, data: finalZkey.data });
   }
 
-  await hre.run(TASK_CIRCOM_TEMPLATE);
+  await hre.run(TASK_CIRCOM_TEMPLATE, zkeys);
 }
 
 function normalize(basePath: string | undefined, userPath: string | undefined): string | undefined {
@@ -220,22 +229,23 @@ function normalize(basePath: string | undefined, userPath: string | undefined): 
   return normalPath;
 }
 
-subtask(TASK_CIRCOM_TEMPLATE, "template Verifier with zkeys").setAction(circomTemplate);
+subtask(TASK_CIRCOM_TEMPLATE, "template Verifier with zkeys")
+  .addParam("zkeys", "list of zkey fastiles")
+  .setAction(circomTemplate);
 
-async function circomTemplate({}, hre: HardhatRuntimeEnvironment) {
+async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: HardhatRuntimeEnvironment) {
   const logger = {
     debug: () => {},
     info: hre.hardhatArguments.verbose ? console.log : () => {},
     warn: hre.hardhatArguments.verbose ? console.log : () => {},
-    error: console.log,
+    error: console.error,
   };
 
   let finalSol = "";
-  for (const circuit of hre.config.circom.circuits) {
-    const finalZkey = await fs.readFile(circuit.zkey);
-
+  for (const zkey of zkeys ?? []) {
+    // replace name and name_capped with circuit.name
     const userTemplate = `
-      function <${circuit.name}>VerifyingKey() internal pure returns (VerifyingKey memory vk) {
+      function <${zkey.name}>VerifyingKey() internal pure returns (VerifyingKey memory vk) {
         vk.alfa1 = Pairing.G1Point(<%vk_alpha1%>);
         vk.beta2 = Pairing.G2Point(<%vk_beta2%>);
         vk.gamma2 = Pairing.G2Point(<%vk_gamma2%>);
@@ -244,7 +254,7 @@ async function circomTemplate({}, hre: HardhatRuntimeEnvironment) {
       <%vk_ic_pts%>
       }
   
-      function verify<${circuit.name.charAt(0).toUpperCase() + circuit.name.slice(1)}>Proof(
+      function verify<${zkey.name.charAt(0).toUpperCase() + zkey.name.slice(1)}>Proof(
           uint256[2] memory a,
           uint256[2][2] memory b,
           uint256[2] memory c,
@@ -254,11 +264,11 @@ async function circomTemplate({}, hre: HardhatRuntimeEnvironment) {
           for (uint256 i = 0; i < input.length; i++) {
               inputValues[i] = input[i];
           }
-          return verifyProof(a, b, c, inputValues, <${circuit.name}>VerifyingKey());
+          return verifyProof(a, b, c, inputValues, <${zkey.name}>VerifyingKey());
       }`;
 
     const circuitSol = await snarkjs.zKey.exportSolidityVerifier(
-      finalZkey,
+      zkey.data,
       // strings are opened as relative path files, so turn into an array of bytes
       new TextEncoder().encode(userTemplate),
       logger
