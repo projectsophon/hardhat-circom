@@ -234,9 +234,8 @@ async function circomTemplate({}, hre: HardhatRuntimeEnvironment) {
   for (const circuit of hre.config.circom.circuits) {
     const finalZkey = await fs.readFile(circuit.zkey);
 
-    // replace name and name_capped with circuit.name
     const userTemplate = `
-      function <%name%>VerifyingKey() internal pure returns (VerifyingKey memory vk) {
+      function <${circuit.name}>VerifyingKey() internal pure returns (VerifyingKey memory vk) {
         vk.alfa1 = Pairing.G1Point(<%vk_alpha1%>);
         vk.beta2 = Pairing.G2Point(<%vk_beta2%>);
         vk.gamma2 = Pairing.G2Point(<%vk_gamma2%>);
@@ -245,7 +244,7 @@ async function circomTemplate({}, hre: HardhatRuntimeEnvironment) {
       <%vk_ic_pts%>
       }
   
-      function verify<%name_capped%>Proof(
+      function verify<${circuit.name.charAt(0).toUpperCase() + circuit.name.slice(1)}>Proof(
           uint256[2] memory a,
           uint256[2][2] memory b,
           uint256[2] memory c,
@@ -255,13 +254,9 @@ async function circomTemplate({}, hre: HardhatRuntimeEnvironment) {
           for (uint256 i = 0; i < input.length; i++) {
               inputValues[i] = input[i];
           }
-          return verifyProof(a, b, c, inputValues, <%name%>VerifyingKey());
-      }
-      `
-      .replace(/<%name_capped%>/g, circuit.name.charAt(0).toUpperCase() + circuit.name.slice(1))
-      .replace(/<%name%>/g, circuit.name);
+          return verifyProof(a, b, c, inputValues, <${circuit.name}>VerifyingKey());
+      }`;
 
-    // they replace everything else
     const circuitSol = await snarkjs.zKey.exportSolidityVerifier(
       finalZkey,
       // strings are opened as relative path files, so turn into an array of bytes
