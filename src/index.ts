@@ -1,13 +1,27 @@
 import * as path from "path";
 import * as fs from "fs/promises";
-import { extendConfig, task, subtask, types } from "hardhat/config";
+import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
 
-// @ts-ignore because they don't ship types
-import * as snarkjs from "snarkjs";
+import snarkjs from "./snarkjs";
 // @ts-ignore because they don't ship types
 import * as circomCompiler from "circom";
+
+declare module "hardhat/types/runtime" {
+  interface HardhatRuntimeEnvironment {
+    circom: {
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      [key: string]: Function;
+    };
+    snarkjs: typeof snarkjs;
+  }
+}
+
+extendEnvironment((hre) => {
+  hre.circom = circomCompiler;
+  hre.snarkjs = snarkjs;
+});
 
 // Add our types to the Hardhat config
 declare module "hardhat/types/config" {
@@ -138,13 +152,6 @@ async function circomCompile(
   { deterministic, debug }: { deterministic: boolean; debug: boolean },
   hre: HardhatRuntimeEnvironment
 ) {
-  const logger = {
-    debug: () => {},
-    info: hre.hardhatArguments.verbose ? console.log : () => {},
-    warn: hre.hardhatArguments.verbose ? console.log : () => {},
-    error: console.log,
-  };
-
   const debugPath = path.join(hre.config.paths.artifacts, "circom");
   if (debug) {
     await fs.mkdir(path.join(debugPath), { recursive: true });
@@ -168,18 +175,18 @@ async function circomCompile(
       await fs.writeFile(path.join(debugPath, `${circuit.name}.wasm`), wasm.data ?? new Uint8Array());
     }
 
-    const _cir = await snarkjs.r1cs.info(r1cs, logger);
+    const _cir = await snarkjs.r1cs.info(r1cs);
 
     const newKey: MemFastFile = { type: "mem" };
-    const _csHash = await snarkjs.zKey.newZKey(r1cs, ptau, newKey, logger);
+    const _csHash = await snarkjs.zKey.newZKey(r1cs, ptau, newKey);
     if (debug) {
       await fs.writeFile(path.join(debugPath, `${circuit.name}-contribution.zkey`), newKey.data ?? new Uint8Array());
     }
 
     const finalZkey: MemFastFile = { type: "mem" };
     const _contributionHash = deterministic
-      ? await snarkjs.zKey.beacon(newKey, finalZkey, undefined, circuit.beacon, 10, logger)
-      : await snarkjs.zKey.contribute(newKey, finalZkey, undefined, `${Date.now()}`, logger);
+      ? await snarkjs.zKey.beacon(newKey, finalZkey, undefined, circuit.beacon, 10)
+      : await snarkjs.zKey.contribute(newKey, finalZkey, undefined, `${Date.now()}`);
     if (debug) {
       await fs.writeFile(path.join(debugPath, `${circuit.name}.zkey`), finalZkey.data ?? new Uint8Array());
     }
@@ -187,13 +194,13 @@ async function circomCompile(
     const verificationKey = await snarkjs.zKey.exportVerificationKey(finalZkey);
 
     const wtns: MemFastFile = { type: "mem" };
-    await snarkjs.wtns.calculate(input, wasm, wtns, logger);
+    await snarkjs.wtns.calculate(input, wasm, wtns);
     if (debug) {
       await fs.writeFile(path.join(debugPath, `${circuit.name}.wtns`), wtns.data ?? new Uint8Array());
     }
 
-    const { proof, publicSignals } = await snarkjs.groth16.prove(finalZkey, wtns, logger);
-    const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof, logger);
+    const { proof, publicSignals } = await snarkjs.groth16.prove(finalZkey, wtns);
+    const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
     if (!verified) {
       throw new Error("Could not verify the proof");
     }
@@ -234,13 +241,6 @@ subtask(TASK_CIRCOM_TEMPLATE, "template Verifier with zkeys")
   .setAction(circomTemplate);
 
 async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: HardhatRuntimeEnvironment) {
-  const logger = {
-    debug: () => {},
-    info: hre.hardhatArguments.verbose ? console.log : () => {},
-    warn: hre.hardhatArguments.verbose ? console.log : () => {},
-    error: console.error,
-  };
-
   let finalSol = "";
   for (const zkey of zkeys) {
     // replace name and name_capped with circuit.name
@@ -270,8 +270,7 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
     const circuitSol = await snarkjs.zKey.exportSolidityVerifier(
       zkey,
       // strings are opened as relative path files, so turn into an array of bytes
-      new TextEncoder().encode(userTemplate),
-      logger
+      new TextEncoder().encode(userTemplate)
     );
 
     finalSol = finalSol.concat(circuitSol);
