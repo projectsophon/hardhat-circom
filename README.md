@@ -163,6 +163,7 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import resolve from "resolve";
 import { TASK_CIRCOM_TEMPLATE } from "hardhat-circom";
+import { subtask } from "hardhat/config";
 
 subtask(TASK_CIRCOM_TEMPLATE, "generate Verifier template shipped by SnarkjS").setAction(circomTemplate);
 
