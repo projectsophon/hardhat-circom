@@ -273,7 +273,6 @@ subtask(TASK_CIRCOM_TEMPLATE, "template Verifier with zkeys")
 async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: HardhatRuntimeEnvironment) {
   let finalSol = "";
   for (const zkey of zkeys) {
-    // replace name and name_capped with circuit.name
     const userTemplate = `
     function ${zkey.name}VerifyingKey() internal pure returns (VerifyingKey memory vk) {
       vk.alfa1 = Pairing.G1Point(<%vk_alpha1%>);
@@ -297,11 +296,8 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
         return verifyProof(a, b, c, inputValues, ${zkey.name}VerifyingKey());
     }`;
 
-    const circuitSol = await snarkjs.zKey.exportSolidityVerifier(
-      zkey,
-      // strings are opened as relative path files, so turn into an array of bytes
-      new TextEncoder().encode(userTemplate)
-    );
+    // strings are opened as relative path files, so turn into an array of bytes
+    const circuitSol = await snarkjs.zKey.exportSolidityVerifier(zkey, new TextEncoder().encode(userTemplate));
 
     finalSol = finalSol.concat(circuitSol);
   }
