@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    branches: [master, main]
+
+jobs:
+  release-please:
+    name: Create Release
+    timeout-minutes: 20
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: GoogleCloudPlatform/release-please-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
+
+  npm-release:
+    needs: [release-please]
+    name: Publish to npm registry
+    timeout-minutes: 20
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v2
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Prepare for publish
+        run: yarn --frozen-lockfile --prefer-offline
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_SOPHONBOT }}
