@@ -38,7 +38,6 @@ export interface CircomCircuitUserConfig {
   name?: string;
   circuit?: string;
   input?: string;
-  ptau?: string;
   wasm?: string;
   zkey?: string;
   beacon?: string;
@@ -48,28 +47,26 @@ export interface CircomCircuitConfig {
   name: string;
   circuit: string;
   input: string;
-  ptau: string;
   wasm: string;
   zkey: string;
   beacon: string;
 }
 
 export interface CircomUserConfig {
-  verifierTemplatePath?: string;
-  verifierOutName?: string;
-  circuitInputBasePath?: string;
-  circuitOutputBasePath?: string;
-  circuits?: CircomCircuitUserConfig[];
+  inputBasePath?: string;
+  outputBasePath?: string;
+  ptau: string;
+  circuits: CircomCircuitUserConfig[];
 }
 
 export interface CircomConfig {
-  verifierTemplatePath: string;
-  verifier: string;
-  circuitInputBasePath: string;
-  circuitOutputBasePath: string;
+  inputBasePath: string;
+  outputBasePath: string;
+  ptau: string;
   circuits: CircomCircuitConfig[];
 }
 
+export const PLUGIN_NAME = "hardhat-circom";
 export const TASK_CIRCOM = "circom";
 export const TASK_CIRCOM_TEMPLATE = "circom:template";
 
@@ -85,63 +82,70 @@ export interface ZkeyFastFile {
 }
 
 extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
-  if (!userConfig.circom || !userConfig.circom.circuits || userConfig.circom.circuits.length === 0) {
+  const { root } = config.paths;
+
+  const { inputBasePath, outputBasePath, ptau, circuits = [] } = userConfig.circom ?? {};
+
+  if (circuits.length === 0) {
     throw new HardhatPluginError(
-      "Circom",
-      "Missing required circuits list, please provide via hardhat.config.js (circom.circuits) a list of circuit names to load from the circuitInputBasePath"
+      PLUGIN_NAME,
+      "Missing required circuits list, please provide via hardhat.config.js (circom.circuits) a list of circuit names to load from the inputBasePath"
+    );
+  }
+  if (!ptau) {
+    throw new HardhatPluginError(
+      PLUGIN_NAME,
+      "Missing required ptau location, please provide via hardhat.config.js (circom.ptau) the location of your ptau file"
     );
   }
 
-  const defaultcircuitInputBasePath = path.join(config.paths.root, "circuits");
-  const defaultcircuitOutputBasePath = path.join(config.paths.root, "client", "public");
+  const defaultInputBasePath = path.join(root, "circuits");
+  const defaultOutputBasePath = path.join(root, "circuits");
 
-  const normalizedUserInput =
-    normalize(config.paths.root, userConfig.circom.circuitInputBasePath) ?? defaultcircuitInputBasePath;
-  const normalizedUserOutput =
-    normalize(config.paths.root, userConfig.circom.circuitOutputBasePath) ?? defaultcircuitOutputBasePath;
+  const normalizedInputBasePath = normalize(root, inputBasePath) ?? defaultInputBasePath;
+  const normalizedOutputBasePath = normalize(root, outputBasePath) ?? defaultOutputBasePath;
+
+  const normalizedPtauPath = path.resolve(normalizedInputBasePath, ptau);
 
   config.circom = {
-    circuitInputBasePath: normalizedUserInput,
-    circuitOutputBasePath: normalizedUserOutput,
-    verifierTemplatePath:
-      normalize(config.paths.root, userConfig.circom?.verifierTemplatePath) ??
-      path.join(__dirname, "Verifier.sol.template"),
-    verifier:
-      normalize(config.paths.sources, userConfig.circom?.verifierOutName) ??
-      path.join(config.paths.sources, "Verifier.sol"),
+    inputBasePath: normalizedInputBasePath,
+    outputBasePath: normalizedOutputBasePath,
+    ptau: normalizedPtauPath,
     circuits: [],
   };
 
-  for (const circuit of userConfig.circom?.circuits ?? []) {
-    if (!circuit.name) {
+  for (const { name, beacon, circuit, input, wasm, zkey } of circuits) {
+    if (!name) {
       throw new HardhatPluginError(
-        "Circom",
+        PLUGIN_NAME,
         "Missing required name field in circuits list, please provide via hardhat.config.js (circom.circuits.name)"
       );
     }
 
+    const circuitPath = path.resolve(normalizedInputBasePath, circuit ?? `${name}.circom`);
+    const inputPath = path.resolve(normalizedInputBasePath, input ?? `${name}.json`);
+    const wasmPath = path.resolve(normalizedOutputBasePath, wasm ?? `${name}.wasm`);
+    const zkeyPath = path.resolve(normalizedOutputBasePath, zkey ?? `${name}.zkey`);
+
     config.circom.circuits.push({
-      name: circuit.name,
-      beacon:
-        circuit.beacon !== undefined
-          ? circuit.beacon
-          : "00000000000000000000000000000000000000000000000000000000000000",
-      circuit:
-        normalize(normalizedUserInput, circuit.circuit) ??
-        path.join(defaultcircuitInputBasePath, `${circuit.name}.circom`),
-      input:
-        normalize(normalizedUserInput, circuit.input) ?? path.join(defaultcircuitInputBasePath, `${circuit.name}.json`),
-      ptau:
-        normalize(normalizedUserInput, circuit.ptau) ?? path.join(defaultcircuitInputBasePath, `${circuit.name}.ptau`),
-      wasm:
-        normalize(normalizedUserOutput, circuit.wasm) ??
-        path.join(defaultcircuitOutputBasePath, `${circuit.name}.wasm`),
-      zkey:
-        normalize(normalizedUserOutput, circuit.zkey) ??
-        path.join(defaultcircuitOutputBasePath, `${circuit.name}.zkey`),
+      name: name,
+      beacon: beacon != null ? beacon : "00000000000000000000000000000000000000000000000000000000000000",
+      circuit: circuitPath,
+      input: inputPath,
+      wasm: wasmPath,
+      zkey: zkeyPath,
     });
   }
 });
+
+async function getInputJson(input: string) {
+  const inputString = await fs.readFile(input, "utf8");
+  try {
+    return JSON.parse(inputString);
+  } catch (err) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Failed to parse JSON in file: ${input}`, err);
+  }
+}
 
 task(TASK_CIRCOM, "compile circom circuits and template Verifier")
   .addFlag("deterministic", "enable deterministic builds (except for .wasm)")
@@ -157,61 +161,87 @@ async function circomCompile(
     await fs.mkdir(path.join(debugPath), { recursive: true });
   }
 
+  const ptau = await fs.readFile(hre.config.circom.ptau);
+
   const zkeys = [];
   for (const circuit of hre.config.circom.circuits) {
-    const inputString = (await fs.readFile(circuit.input)).toString();
-    const input = JSON.parse(inputString);
-    const ptau = await fs.readFile(circuit.ptau);
+    const input = await getInputJson(circuit.input);
 
-    const r1cs: MemFastFile = { type: "mem" };
-    const wasm: MemFastFile = { type: "mem" };
+    const r1csFastFile: MemFastFile = { type: "mem" };
+    const wasmFastFile: MemFastFile = { type: "mem" };
     await circomCompiler.compiler(circuit.circuit, {
-      wasmFileName: wasm,
-      r1csFileName: r1cs,
+      wasmFileName: wasmFastFile,
+      r1csFileName: r1csFastFile,
     });
 
-    if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.r1cs`), r1cs.data ?? new Uint8Array());
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.wasm`), wasm.data ?? new Uint8Array());
+    if (!r1csFastFile.data) {
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate r1cs for circuit named: ${circuit.name}`);
+    }
+    if (!wasmFastFile.data) {
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate wasm for circuit named: ${circuit.name}`);
     }
 
-    const _cir = await snarkjs.r1cs.info(r1cs);
-
-    const newKey: MemFastFile = { type: "mem" };
-    const _csHash = await snarkjs.zKey.newZKey(r1cs, ptau, newKey);
     if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}-contribution.zkey`), newKey.data ?? new Uint8Array());
+      await fs.writeFile(path.join(debugPath, `${circuit.name}.r1cs`), r1csFastFile.data);
+      await fs.writeFile(path.join(debugPath, `${circuit.name}.wasm`), wasmFastFile.data);
     }
 
-    const finalZkey: MemFastFile = { type: "mem" };
-    const _contributionHash = deterministic
-      ? await snarkjs.zKey.beacon(newKey, finalZkey, undefined, circuit.beacon, 10)
-      : await snarkjs.zKey.contribute(newKey, finalZkey, undefined, `${Date.now()}`);
-    if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.zkey`), finalZkey.data ?? new Uint8Array());
+    const _cir = await snarkjs.r1cs.info(r1csFastFile);
+
+    const newKeyFastFile: MemFastFile = { type: "mem" };
+    const _csHash = await snarkjs.zKey.newZKey(r1csFastFile, ptau, newKeyFastFile);
+
+    if (!newKeyFastFile.data) {
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate new zkey for circuit named: ${circuit.name}`);
     }
 
-    const verificationKey = await snarkjs.zKey.exportVerificationKey(finalZkey);
-
-    const wtns: MemFastFile = { type: "mem" };
-    await snarkjs.wtns.calculate(input, wasm, wtns);
     if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.wtns`), wtns.data ?? new Uint8Array());
+      await fs.writeFile(path.join(debugPath, `${circuit.name}-contribution.zkey`), newKeyFastFile.data);
     }
 
-    const { proof, publicSignals } = await snarkjs.groth16.prove(finalZkey, wtns);
+    const beaconZkeyFastFile: MemFastFile = { type: "mem" };
+    const _contributionHash = await snarkjs.zKey.beacon(
+      newKeyFastFile,
+      beaconZkeyFastFile,
+      undefined,
+      deterministic ? circuit.beacon : `${Date.now()}`,
+      10
+    );
+
+    if (!beaconZkeyFastFile.data) {
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate beacon zkey for circuit named: ${circuit.name}`);
+    }
+
+    if (debug) {
+      await fs.writeFile(path.join(debugPath, `${circuit.name}.zkey`), beaconZkeyFastFile.data);
+    }
+
+    const verificationKey = await snarkjs.zKey.exportVerificationKey(beaconZkeyFastFile);
+
+    const wtnsFastFile: MemFastFile = { type: "mem" };
+    await snarkjs.wtns.calculate(input, wasmFastFile, wtnsFastFile);
+
+    if (!wtnsFastFile.data) {
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate witness for circuit named: ${circuit.name}`);
+    }
+
+    if (debug) {
+      await fs.writeFile(path.join(debugPath, `${circuit.name}.wtns`), wtnsFastFile.data);
+    }
+
+    const { proof, publicSignals } = await snarkjs.groth16.prove(beaconZkeyFastFile, wtnsFastFile);
     const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
     if (!verified) {
-      throw new Error("Could not verify the proof");
+      throw new HardhatPluginError(PLUGIN_NAME, `Could not verify the proof for circuit named: ${circuit.name}`);
     }
 
     await fs.mkdir(path.dirname(circuit.wasm), { recursive: true });
-    await fs.writeFile(circuit.wasm, wasm.data ?? new Uint8Array());
+    await fs.writeFile(circuit.wasm, wasmFastFile.data);
 
     await fs.mkdir(path.dirname(circuit.zkey), { recursive: true });
-    await fs.writeFile(circuit.zkey, finalZkey.data ?? new Uint8Array());
+    await fs.writeFile(circuit.zkey, beaconZkeyFastFile.data);
 
-    zkeys.push({ type: "mem", name: circuit.name, data: finalZkey.data });
+    zkeys.push({ type: "mem", name: circuit.name, data: beaconZkeyFastFile.data });
   }
 
   await hre.run(TASK_CIRCOM_TEMPLATE, { zkeys: zkeys });
@@ -276,10 +306,13 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
     finalSol = finalSol.concat(circuitSol);
   }
 
+  const verifierTemplatePath = path.join(__dirname, "Verifier.sol.template");
+  const verifier = path.join(hre.config.paths.sources, "Verifier.sol");
+
   const warning = "// THIS FILE IS GENERATED BY HARDHAT-CIRCOM. DO NOT EDIT THIS FILE.\n\n";
-  const template = warning + (await fs.readFile(hre.config.circom.verifierTemplatePath)).toString();
+  const template = warning + (await fs.readFile(verifierTemplatePath)).toString();
 
-  await fs.mkdir(path.dirname(hre.config.circom.verifier), { recursive: true });
+  await fs.mkdir(path.dirname(verifier), { recursive: true });
 
-  await fs.writeFile(hre.config.circom.verifier, template.replace(/<%full_circuit%>/g, finalSol));
+  await fs.writeFile(verifier, template.replace(/<%full_circuit%>/g, finalSol));
 }
