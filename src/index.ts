@@ -164,7 +164,7 @@ async function circomCompile(
 
   const zkeys = [];
   for (const circuit of hre.config.circom.circuits) {
-    const input = getInputJson(circuit.input);
+    const input = await getInputJson(circuit.input);
 
     const r1csFastFile: MemFastFile = { type: "mem" };
     const wasmFastFile: MemFastFile = { type: "mem" };
