@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs/promises";
-import { extendConfig, task, subtask } from "hardhat/config";
+import { extendConfig, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
 
@@ -207,7 +207,7 @@ async function circomCompile(
     zkeys.push({ type: "mem", name: circuit.name, data: finalZkey.data });
   }
 
-  await hre.run(TASK_CIRCOM_TEMPLATE, zkeys);
+  await hre.run(TASK_CIRCOM_TEMPLATE, { zkeys: zkeys });
 }
 
 function normalize(basePath: string | undefined, userPath: string | undefined): string | undefined {
@@ -230,7 +230,7 @@ function normalize(basePath: string | undefined, userPath: string | undefined): 
 }
 
 subtask(TASK_CIRCOM_TEMPLATE, "template Verifier with zkeys")
-  .addParam("zkeys", "array of zkey fastfiles (can be passed directly to SnarkJS)")
+  .addParam("zkeys", "array of zkey fastfiles (can be passed directly to SnarkJS)", undefined, types.any)
   .setAction(circomTemplate);
 
 async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: HardhatRuntimeEnvironment) {
@@ -245,27 +245,27 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
   for (const zkey of zkeys) {
     // replace name and name_capped with circuit.name
     const userTemplate = `
-      function <${zkey.name}>VerifyingKey() internal pure returns (VerifyingKey memory vk) {
-        vk.alfa1 = Pairing.G1Point(<%vk_alpha1%>);
-        vk.beta2 = Pairing.G2Point(<%vk_beta2%>);
-        vk.gamma2 = Pairing.G2Point(<%vk_gamma2%>);
-        vk.delta2 = Pairing.G2Point(<%vk_delta2%>);
-        vk.IC = new Pairing.G1Point[](<%vk_ic_length%>);
-      <%vk_ic_pts%>
-      }
-  
-      function verify<${zkey.name.charAt(0).toUpperCase() + zkey.name.slice(1)}>Proof(
-          uint256[2] memory a,
-          uint256[2][2] memory b,
-          uint256[2] memory c,
-          uint256[<%vk_input_length%>] memory input
-      ) public view returns (bool) {
-          uint256[] memory inputValues = new uint256[](input.length);
-          for (uint256 i = 0; i < input.length; i++) {
-              inputValues[i] = input[i];
-          }
-          return verifyProof(a, b, c, inputValues, <${zkey.name}>VerifyingKey());
-      }`;
+    function ${zkey.name}VerifyingKey() internal pure returns (VerifyingKey memory vk) {
+      vk.alfa1 = Pairing.G1Point(<%vk_alpha1%>);
+      vk.beta2 = Pairing.G2Point(<%vk_beta2%>);
+      vk.gamma2 = Pairing.G2Point(<%vk_gamma2%>);
+      vk.delta2 = Pairing.G2Point(<%vk_delta2%>);
+      vk.IC = new Pairing.G1Point[](<%vk_ic_length%>);
+    <%vk_ic_pts%>
+    }
+
+    function verify${zkey.name.charAt(0).toUpperCase() + zkey.name.slice(1)}Proof(
+        uint256[2] memory a,
+        uint256[2][2] memory b,
+        uint256[2] memory c,
+        uint256[<%vk_input_length%>] memory input
+    ) public view returns (bool) {
+        uint256[] memory inputValues = new uint256[](input.length);
+        for (uint256 i = 0; i < input.length; i++) {
+            inputValues[i] = input[i];
+        }
+        return verifyProof(a, b, c, inputValues, ${zkey.name}VerifyingKey());
+    }`;
 
     const circuitSol = await snarkjs.zKey.exportSolidityVerifier(
       zkey,
