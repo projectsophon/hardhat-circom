@@ -7,8 +7,9 @@ import type { HardhatRuntimeEnvironment } from "hardhat/types";
 function assertPathIncludes(config: string, unixPath: string) {
   assert.include(config, path.normalize(unixPath));
 }
-function assertPathEquals(config: string, unixPath: string) {
-  assert.equal(config, path.normalize(unixPath));
+function assertPathEqualsAbsolute(config: string, unixPath: string) {
+  assert(path.isAbsolute(unixPath));
+  assert.equal(config, path.resolve(unixPath));
 }
 
 describe("Hardhat Circom", function () {
@@ -88,27 +89,27 @@ describe("Hardhat Circom", function () {
 
     it("Should override inputBasePath and circuit name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assertPathEquals(third.circuit, "/circuits/circuit.circom");
+      assertPathEqualsAbsolute(third.circuit, "/circuits/circuit.circom");
     });
 
     it("Should override inputBasePath and input name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assertPathEquals(third.input, "/circuits/input.json");
+      assertPathEqualsAbsolute(third.input, "/circuits/input.json");
     });
 
     it("Applies override inputBasePath and with required ptau name", function () {
       const { ptau } = this.hre.config.circom;
-      assertPathEquals(ptau, "/circuits/pot15_final.ptau");
+      assertPathEqualsAbsolute(ptau, "/circuits/pot15_final.ptau");
     });
 
     it("Should override outputBasePath and wasm name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assertPathEquals(third.wasm, "/client/public/circuit.wasm");
+      assertPathEqualsAbsolute(third.wasm, "/client/public/circuit.wasm");
     });
 
     it("Should override outputBasePath and zkey name", function () {
       const third = this.hre.config.circom.circuits[2];
-      assertPathEquals(third.zkey, "/client/public/circuit.zkey");
+      assertPathEqualsAbsolute(third.zkey, "/client/public/circuit.zkey");
     });
   });
 });
