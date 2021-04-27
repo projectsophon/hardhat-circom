@@ -127,7 +127,7 @@ module.exports = {
 Using the above file structure, you'd get this resulting tree after compile:
 
 ```bash
-j:~/best_dapp_ever/ $ ls
+j:~/best_dapp_ever/ $ tree
 ├── client
 │   ├── circuits
 │   │   ├── init
@@ -186,19 +186,19 @@ async function circomTemplate({ zkeys }, hre) {
 
 ## Determinism
 
-When you recompile the same circuit, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your Verifier.sol to be updated.
+When you recompile the same circuit, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your `Verifier.sol` to be updated.
 
-This causes lots of churn on large binary files in git, and makes it hard to know if you've actually made fundamental changes between git commits.
+This causes lots of churn on large binary files in git, and makes it hard to know if you've actually made fundamental changes between commits.
 
-For development builds you may use the `--deterministic` flag in order to use a **NON-RANDOM** and **UNSECURE** hardcoded entropy (0x000000 by default) which will allow you to more easily inspect and catch changes in your circuits. You can adjust this default beacon by setting the `beacon` property on a circuit's config in your `hardhat.config.js` file.
+For development builds, we provide the `--deterministic` flag in order to use a **NON-RANDOM** and **UNSECURE** hardcoded entropy (0x000000 by default) which will allow you to more easily inspect and catch changes in your circuits. You can adjust this default beacon by setting the `beacon` property on a circuit's config in your `hardhat.config.js` file.
 
-**Note:** The wasm files currently have hardcoded system paths, so they will be deterministic on the same machine, but not between machines. If the zkeys haven't changed you may disregard changes in the wasm files.
+**Note:** The wasm files currently have hardcoded system paths, so they will be deterministic on the same machine, but not between machines. If the `.zkey` files haven't changed you may disregard changes in the wasm files.
 
 ## Debugging
 
 When making circuit changes, it may be necessary to inspect the intermediate assets built between circom steps. You can output all intermediate files with the `--debug` flag. All the files from the circom build process will be saved to a `circom/` directory in Hardhat's artifacts directory (`./artifacts/circom/` by default).
 
-```sh
+```bash
 j:~/best_dapp_ever/ $ tree artifacts
 └── circom
     ├── init-contribution.zkey
@@ -215,8 +215,8 @@ Some users might want their circuits compiled each time they run the Hardhat com
 To opt into this behavior, you can hook the Hardhat compile task like so:
 
 ```js
-import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names";
 import { TASK_CIRCOM } from "hardhat-circom";
+import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names";
 
 task(TASK_COMPILE, "hook compile task to include circuit compile and template").setAction(circuitsCompile);
 
