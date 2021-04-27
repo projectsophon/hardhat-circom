@@ -1,4 +1,3 @@
-// TODO: None of the path tests are cross platform
 import * as path from "path";
 import { assert } from "chai";
 import { resetHardhatContext } from "hardhat/plugins-testing";
