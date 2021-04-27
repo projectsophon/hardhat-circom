@@ -66,6 +66,7 @@ export interface CircomConfig {
   circuits: CircomCircuitConfig[];
 }
 
+export const PLUGIN_NAME = "hardhat-circom";
 export const TASK_CIRCOM = "circom";
 export const TASK_CIRCOM_TEMPLATE = "circom:template";
 
@@ -87,13 +88,13 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
 
   if (circuits.length === 0) {
     throw new HardhatPluginError(
-      "Circom",
+      PLUGIN_NAME,
       "Missing required circuits list, please provide via hardhat.config.js (circom.circuits) a list of circuit names to load from the inputBasePath"
     );
   }
   if (!ptau) {
     throw new HardhatPluginError(
-      "Circom",
+      PLUGIN_NAME,
       "Missing required ptau location, please provide via hardhat.config.js (circom.ptau) the location of your ptau file"
     );
   }
@@ -116,7 +117,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
   for (const { name, beacon, circuit, input, wasm, zkey } of circuits) {
     if (!name) {
       throw new HardhatPluginError(
-        "Circom",
+        PLUGIN_NAME,
         "Missing required name field in circuits list, please provide via hardhat.config.js (circom.circuits.name)"
       );
     }
@@ -142,7 +143,7 @@ async function getInputJson(input: string) {
   try {
     return JSON.parse(inputString);
   } catch (err) {
-    throw new Error(`Failed to parse JSON in file: ${input}`);
+    throw new HardhatPluginError(PLUGIN_NAME, `Failed to parse JSON in file: ${input}`, err);
   }
 }
 
@@ -174,10 +175,10 @@ async function circomCompile(
     });
 
     if (!r1csFastFile.data) {
-      throw new Error(`Unable to generate r1cs for circuit named: ${circuit.name}`);
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate r1cs for circuit named: ${circuit.name}`);
     }
     if (!wasmFastFile.data) {
-      throw new Error(`Unable to generate wasm for circuit named: ${circuit.name}`);
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate wasm for circuit named: ${circuit.name}`);
     }
 
     if (debug) {
@@ -191,7 +192,7 @@ async function circomCompile(
     const _csHash = await snarkjs.zKey.newZKey(r1csFastFile, ptau, newKeyFastFile);
 
     if (!newKeyFastFile.data) {
-      throw new Error(`Unable to generate new zkey for circuit named: ${circuit.name}`);
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate new zkey for circuit named: ${circuit.name}`);
     }
 
     if (debug) {
@@ -208,7 +209,7 @@ async function circomCompile(
     );
 
     if (!beaconZkeyFastFile.data) {
-      throw new Error(`Unable to generate beacon zkey for circuit named: ${circuit.name}`);
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate beacon zkey for circuit named: ${circuit.name}`);
     }
 
     if (debug) {
@@ -221,7 +222,7 @@ async function circomCompile(
     await snarkjs.wtns.calculate(input, wasmFastFile, wtnsFastFile);
 
     if (!wtnsFastFile.data) {
-      throw new Error(`Unable to generate witness for circuit named: ${circuit.name}`);
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate witness for circuit named: ${circuit.name}`);
     }
 
     if (debug) {
@@ -231,7 +232,7 @@ async function circomCompile(
     const { proof, publicSignals } = await snarkjs.groth16.prove(beaconZkeyFastFile, wtnsFastFile);
     const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
     if (!verified) {
-      throw new Error(`Could not verify the proof for circuit named: ${circuit.name}`);
+      throw new HardhatPluginError(PLUGIN_NAME, `Could not verify the proof for circuit named: ${circuit.name}`);
     }
 
     await fs.mkdir(path.dirname(circuit.wasm), { recursive: true });
