@@ -52,7 +52,7 @@ You must run `hardhat circom` at least once to build the assets before compiling
 
 ## Basic configuration
 
-Set up your project (we'll use `best_dapp_ever/`) with the following minimal `hardhat.config.js` at the root.
+Set up your project (we'll use `best_dapp_ever/`) with the following minimal `hardhat.config.js` at the root. The two required properties are `ptau` (see [Powers of Tau](#powers-of-tau)) and `circuits`.
 
 ```js
 module.exports = {
@@ -147,6 +147,12 @@ j:~/best_dapp_ever/ $ ls
     │   └── input.json
     └── pot15_final.ptau
 ```
+
+## Powers of Tau
+
+You must provide a Powers of Tau from a Phase 1 ceremony. We recommend using one of the `.ptau` files from the Hermez Protocol's ceremony, available from [their Dropbox folder](https://www.dropbox.com/sh/mn47gnepqu88mzl/AACaJkBU7mmCq8uU8ml0-0fma?dl=0).
+
+These are all named `powersOfTau28_hez_final_*.ptau` where the `*` is some number. This number indicates the number of constraints (`2^x`) that can exist in your circuits.
 
 ## Verifier.sol and templating
 
