@@ -9,6 +9,8 @@ jobs:
     name: Create Release
     timeout-minutes: 20
     runs-on: ubuntu-20.04
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
     steps:
       - uses: GoogleCloudPlatform/release-please-action@v2
         with:
@@ -17,6 +19,7 @@ jobs:
 
   npm-release:
     needs: [release-please]
+    if: ${{ needs.release-please.outputs.release_created }}
     name: Publish to npm registry
     timeout-minutes: 20
     runs-on: ubuntu-20.04
