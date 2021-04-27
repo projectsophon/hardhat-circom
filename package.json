@@ -34,7 +34,7 @@
     "hardhat": "^2.0.0"
   },
   "devDependencies": {
-    "@projectsophon/eslint-config": "0.0.1",
+    "@projectsophon/eslint-config": "0.0.2",
     "@projectsophon/prettier-config": "0.0.0",
     "@projectsophon/tsconfig": "0.0.0",
     "@types/chai": "^4.2.14",

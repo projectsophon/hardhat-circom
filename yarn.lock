@@ -162,10 +162,10 @@
     "@nodelib/fs.scandir" "2.1.4"
     fastq "^1.6.0"
 
-"@projectsophon/eslint-config@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@projectsophon/eslint-config/-/eslint-config-0.0.1.tgz#fab4f8c2e72f602e5752a4e9a35a0229cc26e619"
-  integrity sha512-y2IAEJ8XK/CEZtrKCAXfSLPYdmOEpBYzCfZ9N+M55lTn69CuDBXvpy5zqX10s+8wWbK5u5SEhEXdB2/g0/Zy6Q==
+"@projectsophon/eslint-config@0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@projectsophon/eslint-config/-/eslint-config-0.0.2.tgz#6b96a87f222894aa0eb4491a38d5b9f62bfd5f7f"
+  integrity sha512-GQuyu492P1/vR8Liz7xr/rlpYmNI8kuzHM+fgsReRm+LcsQ6uemL9Yx8/hvw+9IJGLymHBs94gwGahntELeirQ==
   dependencies:
     "@typescript-eslint/eslint-plugin" "^4.22.0"
     "@typescript-eslint/parser" "^4.22.0"
