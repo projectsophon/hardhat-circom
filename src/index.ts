@@ -64,7 +64,7 @@ interface MemFastFile {
   data?: Uint8Array;
 }
 
-interface ZkeyFastFile {
+export interface ZkeyFastFile {
   type: "mem";
   name: string;
   data: Uint8Array;
@@ -230,7 +230,7 @@ function normalize(basePath: string | undefined, userPath: string | undefined): 
 }
 
 subtask(TASK_CIRCOM_TEMPLATE, "template Verifier with zkeys")
-  .addParam("zkeys", "list of zkey fastiles")
+  .addParam("zkeys", "array of zkey fastfiles (can be passed directly to SnarkJS)")
   .setAction(circomTemplate);
 
 async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: HardhatRuntimeEnvironment) {
@@ -242,7 +242,7 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
   };
 
   let finalSol = "";
-  for (const zkey of zkeys ?? []) {
+  for (const zkey of zkeys) {
     // replace name and name_capped with circuit.name
     const userTemplate = `
       function <${zkey.name}>VerifyingKey() internal pure returns (VerifyingKey memory vk) {
@@ -268,7 +268,7 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
       }`;
 
     const circuitSol = await snarkjs.zKey.exportSolidityVerifier(
-      zkey.data,
+      zkey,
       // strings are opened as relative path files, so turn into an array of bytes
       new TextEncoder().encode(userTemplate),
       logger
