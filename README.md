@@ -58,9 +58,11 @@ Set up your project (we'll use `best_dapp_ever/`) with the following minimal `ha
 module.exports = {
   solidity: "0.6.7",
   circom: {
-    // The final ptau file from a Phase 1 ceremony
-    ptau: "./circuits/pot15_final.ptau",
-    // Each object in this array refers to a separate circuit
+    // (optional) Base path for input files, defaults to `./circuits/`
+    inputBasePath: "./circuits",
+    // (required) The final ptau file, relative to inputBasePath, from a Phase 1 ceremony
+    ptau: "pot15_final.ptau",
+    // (required) Each object in this array refers to a separate circuit
     circuits: [{ name: "init" }],
   },
 };
@@ -97,15 +99,24 @@ If you'd like to adjust details about the circuit compilation or input/output lo
 ```js
 module.exports = {
   circom: {
+    // (optional) Base path for files being read, defaults to `./circuits/`
     inputBasePath: "./mycircuits/",
+    // (optional) Base path for files being output, defaults to `./circuits/`
     outputBasePath: "./client/",
+    // (required) The final ptau file, relative to inputBasePath, from a Phase 1 ceremony
     ptau: "pot15_final.ptau",
+    // (required) Each object in this array refers to a separate circuit
     circuits: [
       {
+        // (required) The name of the circuit
         name: "init",
+        // (optional) Input path for circuit file, inferred from `name` if unspecified
         circuit: "init/circuit.circom",
+        // (optional) Input path for witness input file, inferred from `name` if unspecified
         input: "init/input.json",
+        // (optional) Output path for wasm file, inferred from `name` if unspecified
         wasm: "circuits/init/circuit.wasm",
+        // (optional) Output path for zkey file, inferred from `name` if unspecified
         zkey: "init.zkey",
         // Used when specifying `--deterministic` instead of the default of all 0s
         beacon: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
@@ -116,7 +127,6 @@ module.exports = {
         input: "play/input.json",
         wasm: "circuits/play/circuit.wasm",
         zkey: "play.zkey",
-        // Used when specifying `--deterministic` instead of the default of all 0s
         beacon: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
       },
     ],
