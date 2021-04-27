@@ -8,7 +8,7 @@ jobs:
   release-please:
     name: Create Release
     timeout-minutes: 20
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: GoogleCloudPlatform/release-please-action@v2
         with:
@@ -19,7 +19,7 @@ jobs:
     needs: [release-please]
     name: Publish to npm registry
     timeout-minutes: 20
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout project
         uses: actions/checkout@v2
