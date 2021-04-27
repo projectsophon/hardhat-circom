@@ -188,6 +188,20 @@ For development builds you may use the `--deterministic` flag in order to use a 
 
 **Note:** The wasm files currently have hardcoded system paths, so they will be deterministic on the same machine, but not between machines. If the zkeys haven't changed you may disregard changes in the wasm files.
 
+## Debugging
+
+When making circuit changes, it may be necessary to inspect the intermediate assets built between circom steps. You can output all intermediate files with the `--debug` flag. All the files from the circom build process will be saved to a `circom/` directory in Hardhat's artifacts directory (`./artifacts/circom/` by default).
+
+```sh
+j:~/best_dapp_ever/ $ tree artifacts
+└── circom
+    ├── init-contribution.zkey
+    ├── init.r1cs
+    ├── init.wasm
+    ├── init.wtns
+    └── init.zkey
+```
+
 ## Hooking compile
 
 Some users might want their circuits compiled each time they run the Hardhat compile task. Hardhat's compile task isn't hooked by default because it imposes ordering restrictions on tasks you import and Circom compiles can take _quite a long time_ to generate.
