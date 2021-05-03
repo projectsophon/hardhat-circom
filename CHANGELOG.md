@@ -2,11 +2,10 @@
 
 ### [1.0.1](https://www.github.com/projectsophon/hardhat-circom/compare/v1.0.0...v1.0.1) (2021-05-03)
 
-
 ### Bug Fixes
 
-* **ci:** Release workflow needed an id ([#21](https://www.github.com/projectsophon/hardhat-circom/issues/21)) ([e59f172](https://www.github.com/projectsophon/hardhat-circom/commit/e59f172187656054bb7a42bac421e3b1efef4368))
-* Use a hex entropy value for non-detereministic beacon ([#28](https://www.github.com/projectsophon/hardhat-circom/issues/28)) ([3e0d352](https://www.github.com/projectsophon/hardhat-circom/commit/3e0d352d19cad0c3481cfc8da20411654ee40d24))
+- **ci:** Release workflow needed an id ([#21](https://www.github.com/projectsophon/hardhat-circom/issues/21)) ([e59f172](https://www.github.com/projectsophon/hardhat-circom/commit/e59f172187656054bb7a42bac421e3b1efef4368))
+- Use a hex entropy value for non-detereministic beacon ([#28](https://www.github.com/projectsophon/hardhat-circom/issues/28)) ([3e0d352](https://www.github.com/projectsophon/hardhat-circom/commit/3e0d352d19cad0c3481cfc8da20411654ee40d24))
 
 ## 1.0.0 (2021-04-27)
 
