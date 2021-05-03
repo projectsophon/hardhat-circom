@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as crypto from "crypto";
 import * as fs from "fs/promises";
 import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
@@ -129,7 +130,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
 
     config.circom.circuits.push({
       name: name,
-      beacon: beacon != null ? beacon : "00000000000000000000000000000000000000000000000000000000000000",
+      beacon: beacon != null ? beacon : "0000000000000000000000000000000000000000000000000000000000000000",
       circuit: circuitPath,
       input: inputPath,
       wasm: wasmPath,
@@ -200,11 +201,12 @@ async function circomCompile(
     }
 
     const beaconZkeyFastFile: MemFastFile = { type: "mem" };
+
     const _contributionHash = await snarkjs.zKey.beacon(
       newKeyFastFile,
       beaconZkeyFastFile,
       undefined,
-      deterministic ? circuit.beacon : `${Date.now()}`,
+      deterministic ? circuit.beacon : crypto.randomBytes(32).toString("hex"),
       10
     );
 

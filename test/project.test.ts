@@ -33,7 +33,7 @@ describe("Hardhat Circom", function () {
 
     it("first circuit default beacon", function () {
       const first = this.hre.config.circom.circuits[0];
-      assert.equal(first.beacon, "00000000000000000000000000000000000000000000000000000000000000");
+      assert.equal(first.beacon, "0000000000000000000000000000000000000000000000000000000000000000");
     });
 
     it("Should use default inputBasePath and circuit name", function () {
