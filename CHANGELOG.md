@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://www.github.com/projectsophon/hardhat-circom/compare/v1.0.1...v1.1.0) (2021-08-12)
+
+
+### Features
+
+* allow naming and exporting r1cs file ([#29](https://www.github.com/projectsophon/hardhat-circom/issues/29)) ([bcb5787](https://www.github.com/projectsophon/hardhat-circom/commit/bcb5787fc7a1acc0d60afd6aedcd8d53277fe5e8))
+
 ### [1.0.1](https://www.github.com/projectsophon/hardhat-circom/compare/v1.0.0...v1.0.1) (2021-05-03)
 
 ### Bug Fixes
