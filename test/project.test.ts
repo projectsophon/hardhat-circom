@@ -106,6 +106,11 @@ describe("Hardhat Circom", function () {
       assertPathEqualsAbsolute(third.wasm, "/client/public/circuit.wasm");
     });
 
+    it("Should override outputBasePath and r1cs name", function () {
+      const third = this.hre.config.circom.circuits[2];
+      assertPathEqualsAbsolute(third.r1cs, "/client/public/circuit.r1cs");
+    });
+
     it("Should override outputBasePath and zkey name", function () {
       const third = this.hre.config.circom.circuits[2];
       assertPathEqualsAbsolute(third.zkey, "/client/public/circuit.zkey");

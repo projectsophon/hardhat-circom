@@ -40,6 +40,7 @@ export interface CircomCircuitUserConfig {
   circuit?: string;
   input?: string;
   wasm?: string;
+  r1cs?: string;
   zkey?: string;
   beacon?: string;
 }
@@ -49,6 +50,7 @@ export interface CircomCircuitConfig {
   circuit: string;
   input: string;
   wasm: string;
+  r1cs: string;
   zkey: string;
   beacon: string;
 }
@@ -115,7 +117,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
     circuits: [],
   };
 
-  for (const { name, beacon, circuit, input, wasm, zkey } of circuits) {
+  for (const { name, beacon, circuit, input, wasm, r1cs, zkey } of circuits) {
     if (!name) {
       throw new HardhatPluginError(
         PLUGIN_NAME,
@@ -126,6 +128,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
     const circuitPath = path.resolve(normalizedInputBasePath, circuit ?? `${name}.circom`);
     const inputPath = path.resolve(normalizedInputBasePath, input ?? `${name}.json`);
     const wasmPath = path.resolve(normalizedOutputBasePath, wasm ?? `${name}.wasm`);
+    const r1csPath = path.resolve(normalizedOutputBasePath, r1cs ?? `${name}.r1cs`);
     const zkeyPath = path.resolve(normalizedOutputBasePath, zkey ?? `${name}.zkey`);
 
     config.circom.circuits.push({
@@ -134,6 +137,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
       circuit: circuitPath,
       input: inputPath,
       wasm: wasmPath,
+      r1cs: r1csPath,
       zkey: zkeyPath,
     });
   }
@@ -242,6 +246,9 @@ async function circomCompile(
 
     await fs.mkdir(path.dirname(circuit.zkey), { recursive: true });
     await fs.writeFile(circuit.zkey, beaconZkeyFastFile.data);
+
+    await fs.mkdir(path.dirname(circuit.r1cs), { recursive: true });
+    await fs.writeFile(circuit.r1cs, r1csFastFile.data);
 
     zkeys.push({ type: "mem", name: circuit.name, data: beaconZkeyFastFile.data });
   }
