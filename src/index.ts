@@ -42,6 +42,7 @@ export interface CircomCircuitUserConfig {
   wasm?: string;
   r1cs?: string;
   zkey?: string;
+  vkey?: string;
   beacon?: string;
 }
 
@@ -52,6 +53,7 @@ export interface CircomCircuitConfig {
   wasm: string;
   r1cs: string;
   zkey: string;
+  vkey: string;
   beacon: string;
 }
 
@@ -117,7 +119,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
     circuits: [],
   };
 
-  for (const { name, beacon, circuit, input, wasm, r1cs, zkey } of circuits) {
+  for (const { name, beacon, circuit, input, wasm, r1cs, zkey, vkey } of circuits) {
     if (!name) {
       throw new HardhatPluginError(
         PLUGIN_NAME,
@@ -130,6 +132,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
     const wasmPath = path.resolve(normalizedOutputBasePath, wasm ?? `${name}.wasm`);
     const r1csPath = path.resolve(normalizedOutputBasePath, r1cs ?? `${name}.r1cs`);
     const zkeyPath = path.resolve(normalizedOutputBasePath, zkey ?? `${name}.zkey`);
+    const vkeyPath = path.resolve(normalizedOutputBasePath, vkey ?? `${name}.vkey.json`);
 
     config.circom.circuits.push({
       name: name,
@@ -139,6 +142,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
       wasm: wasmPath,
       r1cs: r1csPath,
       zkey: zkeyPath,
+      vkey: vkeyPath,
     });
   }
 });
@@ -224,6 +228,10 @@ async function circomCompile(
 
     const verificationKey = await snarkjs.zKey.exportVerificationKey(beaconZkeyFastFile);
 
+    if (debug) {
+      await fs.writeFile(path.join(debugPath, `${circuit.name}.vkey.json`), JSON.stringify(verificationKey));
+    }
+
     const wtnsFastFile: MemFastFile = { type: "mem" };
     await snarkjs.wtns.calculate(input, wasmFastFile, wtnsFastFile);
 
@@ -249,6 +257,9 @@ async function circomCompile(
 
     await fs.mkdir(path.dirname(circuit.r1cs), { recursive: true });
     await fs.writeFile(circuit.r1cs, r1csFastFile.data);
+
+    await fs.mkdir(path.dirname(circuit.vkey), { recursive: true });
+    await fs.writeFile(circuit.vkey, JSON.stringify(verificationKey));
 
     zkeys.push({ type: "mem", name: circuit.name, data: beaconZkeyFastFile.data });
   }
