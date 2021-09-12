@@ -56,6 +56,11 @@ describe("Hardhat Circom", function () {
       assertPathIncludes(first.wasm, "/hardhat-defaults/circuits/hash.wasm");
     });
 
+    it("Should use default outputBasePath and r1cs name", function () {
+      const first = this.hre.config.circom.circuits[0];
+      assertPathIncludes(first.r1cs, "/hardhat-defaults/circuits/hash.r1cs");
+    });
+
     it("Should use default outputBasePath and zkey name", function () {
       const first = this.hre.config.circom.circuits[0];
       assertPathIncludes(first.zkey, "/hardhat-defaults/circuits/hash.zkey");
