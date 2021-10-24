@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://www.github.com/projectsophon/hardhat-circom/compare/v1.1.0...v1.2.0) (2021-10-24)
+
+
+### Features
+
+* Allow naming and exporting of verification key json ([#32](https://www.github.com/projectsophon/hardhat-circom/issues/32)) ([11b6dcc](https://www.github.com/projectsophon/hardhat-circom/commit/11b6dcc5218949a6b8ff6e278d10a60755366427))
+
 ## [1.1.0](https://www.github.com/projectsophon/hardhat-circom/compare/v1.0.1...v1.1.0) (2021-08-12)
 
 ### Features
