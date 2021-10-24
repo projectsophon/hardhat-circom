@@ -29,6 +29,7 @@ const config: HardhatUserConfig = {
         wasm: "circuit.wasm",
         r1cs: "circuit.r1cs",
         zkey: "circuit.zkey",
+        vkey: "circuit.vkey.json",
       },
     ],
   },

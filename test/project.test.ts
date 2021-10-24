@@ -65,6 +65,11 @@ describe("Hardhat Circom", function () {
       const first = this.hre.config.circom.circuits[0];
       assertPathIncludes(first.zkey, "/hardhat-defaults/circuits/hash.zkey");
     });
+
+    it("Should use default outputBasePath and vkey name", function () {
+      const first = this.hre.config.circom.circuits[0];
+      assertPathIncludes(first.vkey, "/hardhat-defaults/circuits/hash.vkey.json");
+    });
   });
 
   describe("Test Overrides", function () {
@@ -119,6 +124,11 @@ describe("Hardhat Circom", function () {
     it("Should override outputBasePath and zkey name", function () {
       const third = this.hre.config.circom.circuits[2];
       assertPathEqualsAbsolute(third.zkey, "/client/public/circuit.zkey");
+    });
+
+    it("Should override outputBasePath and vkey name", function () {
+      const third = this.hre.config.circom.circuits[2];
+      assertPathEqualsAbsolute(third.vkey, "/client/public/circuit.vkey.json");
     });
   });
 });
