@@ -17,7 +17,7 @@
     "README.md"
   ],
   "scripts": {
-    "prepare": "tsc -p . && cpy ./src/Verifier.sol.template dist",
+    "prepare": "tsc -p .",
     "lint": "eslint .",
     "test": "mocha --exit --recursive 'test/**/*.test.ts'",
     "format": "prettier --write .",
@@ -42,7 +42,6 @@
     "@types/mocha": "^8.2.0",
     "@types/node": "^14.14.22",
     "chai": "^4.2.0",
-    "cpy-cli": "3.1.1",
     "eslint": "^7.25.0",
     "hardhat": "^2.0.0",
     "mocha": "^8.0.1",
