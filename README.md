@@ -110,8 +110,7 @@ module.exports = {
       {
         // (required) The name of the circuit
         name: "init",
-        // (optional) The protocol used to build circuits.
-        // Either "groth16" or "plonk", defaults to "groth16"
+        // (optional) Protocol used to build circuits ("groth16" or "plonk"), defaults to "groth16"
         protocol: "groth16",
         // (optional) Input path for circuit file, inferred from `name` if unspecified
         circuit: "init/circuit.circom",
