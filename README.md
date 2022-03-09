@@ -110,6 +110,9 @@ module.exports = {
       {
         // (required) The name of the circuit
         name: "init",
+        // (optional) The protocol used to build circuits.
+        // Either "groth16" or "plonk", defaults to "groth16"
+        protocol: "groth16",
         // (optional) Input path for circuit file, inferred from `name` if unspecified
         circuit: "init/circuit.circom",
         // (optional) Input path for witness input file, inferred from `name` if unspecified
@@ -123,11 +126,12 @@ module.exports = {
       },
       {
         name: "play",
+        protocol: "plonk",
         circuit: "play/circuit.circom",
         input: "play/input.json",
         wasm: "circuits/play/circuit.wasm",
         zkey: "play.zkey",
-        beacon: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        // beacon isn't used for plonk protocol
       },
     ],
   },
