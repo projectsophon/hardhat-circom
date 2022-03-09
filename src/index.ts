@@ -307,10 +307,11 @@ async function plonk({
 task(TASK_CIRCOM, "compile circom circuits and template Verifier")
   .addFlag("deterministic", "enable deterministic builds for groth16 protocol circuits (except for .wasm)")
   .addFlag("debug", "output intermediate files to artifacts directory, generally for debug")
+  .addOptionalParam("circuit", "limit your circom task to a single circuit name", undefined, types.string)
   .setAction(circomCompile);
 
 async function circomCompile(
-  { deterministic, debug }: { deterministic: boolean; debug: boolean },
+  { deterministic, debug, circuit: onlyCircuitNamed }: { deterministic: boolean; debug: boolean; circuit?: string },
   hre: HardhatRuntimeEnvironment
 ) {
   const debugPath = path.join(hre.config.paths.artifacts, "circom");
@@ -322,6 +323,10 @@ async function circomCompile(
 
   const zkeys: ZkeyFastFile[] = [];
   for (const circuit of hre.config.circom.circuits) {
+    if (onlyCircuitNamed && onlyCircuitNamed !== circuit.name) {
+      continue;
+    }
+
     const r1csFastFile: MemFastFile = { type: "mem" };
     const wasmFastFile: MemFastFile = { type: "mem" };
     const watFastFile: MemFastFile = { type: "mem" };
