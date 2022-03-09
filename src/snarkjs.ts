@@ -235,10 +235,10 @@ const wrappedSnark = {
     },
     exportSolidityVerifier: async function exportSolidityVerifier(
       zKeyName: unknown,
-      templateName: unknown,
+      templates: { groth16: string; plonk: string },
       logger = pluginLogger
     ): Promise<string> {
-      return snarkjs.zKey.exportSolidityVerifier(zKeyName, templateName, logger);
+      return snarkjs.zKey.exportSolidityVerifier(zKeyName, templates, logger);
     },
   },
 };
