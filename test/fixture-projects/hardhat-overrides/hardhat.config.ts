@@ -21,6 +21,7 @@ const config: HardhatUserConfig = {
       },
       {
         name: "move",
+        protocol: "plonk",
       },
       {
         name: "init",

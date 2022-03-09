@@ -11,7 +11,7 @@ By providing configuration containing your Phase 1 Powers of Tau and circuits, t
 1. Compile the circuits
 2. Apply the final beacon
 3. Output your `wasm` and `zkey` files
-4. Generate and output a `Verifier.sol`
+4. Generate and output Verifier contracts
 
 ## Installation
 
@@ -33,7 +33,7 @@ import "hardhat-circom";
 
 ## Tasks
 
-This plugin adds the `circom` task to build circuit(s) into `wasm` and `zkey` file and template them to a `Verifier.sol` contract saved to the Hardhat sources directory (usually `contracts/`).
+This plugin adds the `circom` task to build circuit(s) into `wasm` and `zkey` file and template them to seperate Verifier contracts saved to the Hardhat sources directory (usually `contracts/`).
 
 ```bash
 Usage: hardhat [GLOBAL OPTIONS] circom [--deterministic <BOOLEAN>] [--debug <BOOLEAN>]
@@ -78,7 +78,7 @@ j:~/best_dapp_ever/ $ tree
     └── pot15_final.ptau
 ```
 
-Now, you can use `npx hardhat circom --verbose` to compile the circuits and output `Verifier.sol`, `init.zkey`, and `init.wasm` files into their respective directories:
+Now, you can use `npx hardhat circom --verbose` to compile the circuits and output `InitVerifier.sol`, `init.zkey`, and `init.wasm` files into their respective directories:
 
 ```bash
 j:~/best_dapp_ever/ $ tree
@@ -89,7 +89,7 @@ j:~/best_dapp_ever/ $ tree
 │   ├── init.zkey
 │   └── pot15_final.ptau
 └── contracts
-    └── Verifier.sol
+    └── InitVerifier.sol
 ```
 
 ## Advanced configuration
@@ -110,6 +110,8 @@ module.exports = {
       {
         // (required) The name of the circuit
         name: "init",
+        // (optional) Protocol used to build circuits ("groth16" or "plonk"), defaults to "groth16"
+        protocol: "groth16",
         // (optional) Input path for circuit file, inferred from `name` if unspecified
         circuit: "init/circuit.circom",
         // (optional) Input path for witness input file, inferred from `name` if unspecified
@@ -123,11 +125,12 @@ module.exports = {
       },
       {
         name: "play",
+        protocol: "plonk",
         circuit: "play/circuit.circom",
         input: "play/input.json",
         wasm: "circuits/play/circuit.wasm",
         zkey: "play.zkey",
-        beacon: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        // beacon isn't used for plonk protocol
       },
     ],
   },
@@ -147,7 +150,8 @@ j:~/best_dapp_ever/ $ tree
 │   ├── init.zkey
 │   └── play.zkey
 ├── contracts
-│   └── Verifier.sol
+│   ├── InitVerifier.sol
+│   └── PlayVerifier.sol
 └── mycircuits
     ├── init
     │   ├── circuit.circom
@@ -164,43 +168,52 @@ You must provide a Powers of Tau from a Phase 1 ceremony. We recommend using one
 
 These are all named `powersOfTau28_hez_final_*.ptau` where the `*` is some number. This number indicates the number of constraints (`2^x`) that can exist in your circuits.
 
-## Verifier.sol and templating
+## Verifier contracts and templating
 
-This plugin provides a custom `Verifier.sol` template that injects mutliple circuit verifiers into a single Solidity contract.
+This plugin defers to the Solidity templates provided by SnarkJS, which generates a Verifier contract for each circuit.
 
-**However, there are no guarantees this template is audited or up to date. It would be best to override the template by hooking the templating task yourself (exported as `TASK_CIRCOM_TEMPLATE`).**
+**However, there are no guarantees these templates are audited or up to date. It would be best to override it by hooking the templating task yourself (exported as `TASK_CIRCOM_TEMPLATE`).**
 
 You can hook the `TASK_CIRCOM_TEMPLATE` to output your own `Verifier.sol` contract.
 
-For example, if you wanted to output a Verifier per circuit using the bundled snarkjs template:
+For example, if you wanted to output a single Verifier for all your circuits:
 
 ```js
 import * as path from "path";
 import * as fs from "fs/promises";
-import resolve from "resolve";
 import { TASK_CIRCOM_TEMPLATE } from "hardhat-circom";
 import { subtask } from "hardhat/config";
 
 subtask(TASK_CIRCOM_TEMPLATE, "generate Verifier template shipped by SnarkjS").setAction(circomTemplate);
 
 async function circomTemplate({ zkeys }, hre) {
-  const snarkjsTemplate = resolve.sync("snarkjs/templates/verifier_groth16.sol");
+  const myGroth16Template = await fs.readSync(path.resolve("./my_verifier_groth16.sol"), "utf8");
+  const myPlonkTemplate = await fs.readSync(path.resolve("./my_verifier_plonk.sol"), "utf8");
 
+  let combinedVerifier = "";
   for (const zkey of zkeys) {
-    const verifierSol = await hre.snarkjs.zKey.exportSolidityVerifier(zkey, snarkjsTemplate);
-    const verifierPath = path.join(hre.config.paths.sources, `Verifier_${zkey.name}.sol`);
-    await fs.writeFile(verifierPath, verifierSol);
+    const verifierSol = await hre.snarkjs.zKey.exportSolidityVerifier(zkey, {
+      groth16: myGroth16Template,
+      plonk: myPlonkTemplate,
+    });
+
+    combinedVerifier += verifierSol;
   }
+
+  const verifierPath = path.join(hre.config.paths.sources, "Verifier.sol");
+  await fs.writeFile(verifierPath, combinedVerifier);
 }
 ```
 
 ## Determinism
 
-When you recompile the same circuit, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your `Verifier.sol` to be updated.
+**Note:** Determinism only applies to compiling with the `groth16` protocol because it requires a trusted ceremony. The `plonk` protocol only relies on the universal powers of tau ceremony provided as your `ptau` configuration.
+
+When you recompile the same circuit using the `groth16` protocol, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your Verifier contracts to be updated.
 
 This causes lots of churn on large binary files in git, and makes it hard to know if you've actually made fundamental changes between commits.
 
-For development builds, we provide the `--deterministic` flag in order to use a **NON-RANDOM** and **UNSECURE** hardcoded entropy (0x000000 by default) which will allow you to more easily inspect and catch changes in your circuits. You can adjust this default beacon by setting the `beacon` property on a circuit's config in your `hardhat.config.js` file.
+For development builds of `groth16` circuits, we provide the `--deterministic` flag in order to use a **NON-RANDOM** and **UNSECURE** hardcoded entropy (0x000000 by default) which will allow you to more easily inspect and catch changes in your circuits. You can adjust this default beacon by setting the `beacon` property on a circuit's config in your `hardhat.config.js` file.
 
 **Note:** The wasm files currently have hardcoded system paths, so they will be deterministic on the same machine, but not between machines. If the `.zkey` files haven't changed you may disregard changes in the wasm files.
 
@@ -234,4 +247,16 @@ async function circuitsCompile(args, hre, runSuper) {
   await hre.run(TASK_CIRCOM, args);
   await runSuper();
 }
+```
+
+## Circomlib
+
+When working with `circom` (before "circom 2") and `circomlib`, you might need to add a `circom` resolution to your `package.json` because `circomlib` v0.5.5 pins `circom` to v0.5.33, but we need v0.5.46 for this plugin.
+
+Make sure you are using `yarn` and add the following to your `package.json`:
+
+```diff
++  "resolutions": {
++    "circom": "0.5.46"
++  },
 ```
