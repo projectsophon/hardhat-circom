@@ -19,7 +19,7 @@ const wrappedSnark = {
       wasmFile: unknown,
       zkeyFileName: unknown,
       logger = pluginLogger
-    ): Promise<unknown> {
+    ): Promise<{ proof: unknown; publicSignals: unknown }> {
       return snarkjs.groth16.fullProve(input, wasmFile, zkeyFileName, logger);
     },
     prove: async function groth16Prove(
@@ -34,8 +34,41 @@ const wrappedSnark = {
       publicSignals: unknown,
       proof: unknown,
       logger = pluginLogger
-    ): Promise<unknown> {
+    ): Promise<boolean> {
       return snarkjs.groth16.verify(vk_verifier, publicSignals, proof, logger);
+    },
+  },
+  plonk: {
+    fullProve: async function plonkFullProve(
+      input: unknown,
+      wasmFile: unknown,
+      zkeyFileName: unknown,
+      logger = pluginLogger
+    ): Promise<{ proof: unknown; publicSignals: unknown }> {
+      return snarkjs.plonk.fullProve(input, wasmFile, zkeyFileName, logger);
+    },
+    prove: async function plonk16Prove(
+      zkeyFileName: unknown,
+      witnessFileName: unknown,
+      logger = pluginLogger
+    ): Promise<{ proof: unknown; publicSignals: unknown }> {
+      return snarkjs.plonk.prove(zkeyFileName, witnessFileName, logger);
+    },
+    setup: async function plonkSetup(
+      r1csName: unknown,
+      ptauName: unknown,
+      zkeyName: unknown,
+      logger = pluginLogger
+    ): Promise<void> {
+      return snarkjs.plonk.setup(r1csName, ptauName, zkeyName, logger);
+    },
+    verify: async function plonkVerify(
+      vk_verifier: unknown,
+      publicSignals: unknown,
+      proof: unknown,
+      logger = pluginLogger
+    ): Promise<boolean> {
+      return snarkjs.plonk.verify(vk_verifier, publicSignals, proof, logger);
     },
   },
   powersOfTau: {
