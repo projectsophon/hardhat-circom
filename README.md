@@ -207,11 +207,13 @@ async function circomTemplate({ zkeys }, hre) {
 
 ## Determinism
 
-When you recompile the same circuit, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your Verifier contracts to be updated.
+**Note:** Determinism only applies to compiling with the `groth16` protocol because it requires a trusted ceremony. The `plonk` protocol only relies on the universal powers of tau ceremony provided as your `ptau` configuration.
+
+When you recompile the same circuit using the `groth16` protocol, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your Verifier contracts to be updated.
 
 This causes lots of churn on large binary files in git, and makes it hard to know if you've actually made fundamental changes between commits.
 
-For development builds, we provide the `--deterministic` flag in order to use a **NON-RANDOM** and **UNSECURE** hardcoded entropy (0x000000 by default) which will allow you to more easily inspect and catch changes in your circuits. You can adjust this default beacon by setting the `beacon` property on a circuit's config in your `hardhat.config.js` file.
+For development builds of `groth16` circuits, we provide the `--deterministic` flag in order to use a **NON-RANDOM** and **UNSECURE** hardcoded entropy (0x000000 by default) which will allow you to more easily inspect and catch changes in your circuits. You can adjust this default beacon by setting the `beacon` property on a circuit's config in your `hardhat.config.js` file.
 
 **Note:** The wasm files currently have hardcoded system paths, so they will be deterministic on the same machine, but not between machines. If the `.zkey` files haven't changed you may disregard changes in the wasm files.
 
