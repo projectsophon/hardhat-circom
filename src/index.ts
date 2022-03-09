@@ -156,7 +156,7 @@ async function getInputJson(input: string) {
   try {
     return JSON.parse(inputString);
   } catch (err) {
-    throw new HardhatPluginError(PLUGIN_NAME, `Failed to parse JSON in file: ${input}`, err);
+    throw new HardhatPluginError(PLUGIN_NAME, `Failed to parse JSON in file: ${input}`, err as Error);
   }
 }
 
@@ -171,8 +171,8 @@ async function groth16({
   circuit: CircomCircuitConfig;
   deterministic: boolean;
   debug?: { path: string };
-  wasm: MemFastFile;
-  r1cs: MemFastFile;
+  wasm: Required<MemFastFile>;
+  r1cs: Required<MemFastFile>;
   ptau: Buffer;
 }): Promise<ZkeyFastFile> {
   const input = await getInputJson(circuit.input);
@@ -252,8 +252,8 @@ async function plonk({
 }: {
   circuit: CircomCircuitConfig;
   debug?: { path: string };
-  wasm: MemFastFile;
-  r1cs: MemFastFile;
+  wasm: Required<MemFastFile>;
+  r1cs: Required<MemFastFile>;
   ptau: Buffer;
 }): Promise<ZkeyFastFile> {
   const input = await getInputJson(circuit.input);
@@ -347,8 +347,9 @@ async function circomCompile(
         circuit,
         deterministic,
         debug: debug ? { path: debugPath } : undefined,
-        wasm: wasmFastFile,
-        r1cs: r1csFastFile,
+        // the `.data` property is checked above
+        wasm: wasmFastFile as Required<MemFastFile>,
+        r1cs: r1csFastFile as Required<MemFastFile>,
         ptau,
       });
       zkeys.push(zkey);
@@ -356,8 +357,9 @@ async function circomCompile(
       const zkey = await plonk({
         circuit,
         debug: debug ? { path: debugPath } : undefined,
-        wasm: wasmFastFile,
-        r1cs: r1csFastFile,
+        // the `.data` property is checked above
+        wasm: wasmFastFile as Required<MemFastFile>,
+        r1cs: r1csFastFile as Required<MemFastFile>,
         ptau,
       });
       zkeys.push(zkey);
