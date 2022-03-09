@@ -160,8 +160,151 @@ async function getInputJson(input: string) {
   }
 }
 
+async function groth16({
+  circuit,
+  deterministic,
+  debug,
+  wasm: wasmFastFile,
+  r1cs: r1csFastFile,
+  ptau,
+}: {
+  circuit: CircomCircuitConfig;
+  deterministic: boolean;
+  debug?: { path: string };
+  wasm: MemFastFile;
+  r1cs: MemFastFile;
+  ptau: Buffer;
+}): Promise<ZkeyFastFile> {
+  const input = await getInputJson(circuit.input);
+
+  const newKeyFastFile: MemFastFile = { type: "mem" };
+  const _csHash = await snarkjs.zKey.newZKey(r1csFastFile, ptau, newKeyFastFile);
+
+  if (!newKeyFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate new zkey for circuit named: ${circuit.name}`);
+  }
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}-contribution.zkey`), newKeyFastFile.data);
+  }
+
+  const beaconZkeyFastFile: MemFastFile = { type: "mem" };
+
+  const _contributionHash = await snarkjs.zKey.beacon(
+    newKeyFastFile,
+    beaconZkeyFastFile,
+    undefined,
+    deterministic ? circuit.beacon : crypto.randomBytes(32).toString("hex"),
+    10
+  );
+
+  if (!beaconZkeyFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate beacon zkey for circuit named: ${circuit.name}`);
+  }
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.zkey`), beaconZkeyFastFile.data);
+  }
+
+  const verificationKey = await snarkjs.zKey.exportVerificationKey(beaconZkeyFastFile);
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.vkey.json`), JSON.stringify(verificationKey));
+  }
+
+  const wtnsFastFile: MemFastFile = { type: "mem" };
+  await snarkjs.wtns.calculate(input, wasmFastFile, wtnsFastFile);
+
+  if (!wtnsFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate witness for circuit named: ${circuit.name}`);
+  }
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.wtns`), wtnsFastFile.data);
+  }
+
+  const { proof, publicSignals } = await snarkjs.groth16.prove(beaconZkeyFastFile, wtnsFastFile);
+  const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
+  if (!verified) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Could not verify the proof for circuit named: ${circuit.name}`);
+  }
+
+  await fs.mkdir(path.dirname(circuit.wasm), { recursive: true });
+  await fs.writeFile(circuit.wasm, wasmFastFile.data);
+
+  await fs.mkdir(path.dirname(circuit.zkey), { recursive: true });
+  await fs.writeFile(circuit.zkey, beaconZkeyFastFile.data);
+
+  await fs.mkdir(path.dirname(circuit.r1cs), { recursive: true });
+  await fs.writeFile(circuit.r1cs, r1csFastFile.data);
+
+  await fs.mkdir(path.dirname(circuit.vkey), { recursive: true });
+  await fs.writeFile(circuit.vkey, JSON.stringify(verificationKey));
+
+  return { type: "mem", name: circuit.name, data: beaconZkeyFastFile.data };
+}
+
+async function plonk({
+  circuit,
+  debug,
+  wasm: wasmFastFile,
+  r1cs: r1csFastFile,
+  ptau,
+}: {
+  circuit: CircomCircuitConfig;
+  debug?: { path: string };
+  wasm: MemFastFile;
+  r1cs: MemFastFile;
+  ptau: Buffer;
+}): Promise<ZkeyFastFile> {
+  const input = await getInputJson(circuit.input);
+
+  const newKeyFastFile: MemFastFile = { type: "mem" };
+
+  await snarkjs.plonk.setup(r1csFastFile, ptau, newKeyFastFile);
+
+  if (!newKeyFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate new zkey for circuit named: ${circuit.name}`);
+  }
+
+  const verificationKey = await snarkjs.zKey.exportVerificationKey(newKeyFastFile);
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.vkey.json`), JSON.stringify(verificationKey));
+  }
+
+  const wtnsFastFile: MemFastFile = { type: "mem" };
+  await snarkjs.wtns.calculate(input, wasmFastFile, wtnsFastFile);
+
+  if (!wtnsFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate witness for circuit named: ${circuit.name}`);
+  }
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.wtns`), wtnsFastFile.data);
+  }
+
+  const { proof, publicSignals } = await snarkjs.plonk.prove(newKeyFastFile, wtnsFastFile);
+  const verified = await snarkjs.plonk.verify(verificationKey, publicSignals, proof);
+  if (!verified) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Could not verify the proof for circuit named: ${circuit.name}`);
+  }
+
+  await fs.mkdir(path.dirname(circuit.wasm), { recursive: true });
+  await fs.writeFile(circuit.wasm, wasmFastFile.data);
+
+  await fs.mkdir(path.dirname(circuit.zkey), { recursive: true });
+  await fs.writeFile(circuit.zkey, newKeyFastFile.data);
+
+  await fs.mkdir(path.dirname(circuit.r1cs), { recursive: true });
+  await fs.writeFile(circuit.r1cs, r1csFastFile.data);
+
+  await fs.mkdir(path.dirname(circuit.vkey), { recursive: true });
+  await fs.writeFile(circuit.vkey, JSON.stringify(verificationKey));
+
+  return { type: "mem", name: circuit.name, data: newKeyFastFile.data };
+}
+
 task(TASK_CIRCOM, "compile circom circuits and template Verifier")
-  .addFlag("deterministic", "enable deterministic builds (except for .wasm)")
+  .addFlag("deterministic", "enable deterministic builds for groth16 protocol circuits (except for .wasm)")
   .addFlag("debug", "output intermediate files to artifacts directory, generally for debug")
   .setAction(circomCompile);
 
@@ -176,10 +319,8 @@ async function circomCompile(
 
   const ptau = await fs.readFile(hre.config.circom.ptau);
 
-  const zkeys = [];
+  const zkeys: ZkeyFastFile[] = [];
   for (const circuit of hre.config.circom.circuits) {
-    const input = await getInputJson(circuit.input);
-
     const r1csFastFile: MemFastFile = { type: "mem" };
     const wasmFastFile: MemFastFile = { type: "mem" };
     await circomCompiler.compiler(circuit.circuit, {
@@ -201,71 +342,26 @@ async function circomCompile(
 
     const _cir = await snarkjs.r1cs.info(r1csFastFile);
 
-    const newKeyFastFile: MemFastFile = { type: "mem" };
-    const _csHash = await snarkjs.zKey.newZKey(r1csFastFile, ptau, newKeyFastFile);
-
-    if (!newKeyFastFile.data) {
-      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate new zkey for circuit named: ${circuit.name}`);
+    if (circuit.protocol === "groth16") {
+      const zkey = await groth16({
+        circuit,
+        deterministic,
+        debug: debug ? { path: debugPath } : undefined,
+        wasm: wasmFastFile,
+        r1cs: r1csFastFile,
+        ptau,
+      });
+      zkeys.push(zkey);
+    } else {
+      const zkey = await plonk({
+        circuit,
+        debug: debug ? { path: debugPath } : undefined,
+        wasm: wasmFastFile,
+        r1cs: r1csFastFile,
+        ptau,
+      });
+      zkeys.push(zkey);
     }
-
-    if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}-contribution.zkey`), newKeyFastFile.data);
-    }
-
-    const beaconZkeyFastFile: MemFastFile = { type: "mem" };
-
-    const _contributionHash = await snarkjs.zKey.beacon(
-      newKeyFastFile,
-      beaconZkeyFastFile,
-      undefined,
-      deterministic ? circuit.beacon : crypto.randomBytes(32).toString("hex"),
-      10
-    );
-
-    if (!beaconZkeyFastFile.data) {
-      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate beacon zkey for circuit named: ${circuit.name}`);
-    }
-
-    if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.zkey`), beaconZkeyFastFile.data);
-    }
-
-    const verificationKey = await snarkjs.zKey.exportVerificationKey(beaconZkeyFastFile);
-
-    if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.vkey.json`), JSON.stringify(verificationKey));
-    }
-
-    const wtnsFastFile: MemFastFile = { type: "mem" };
-    await snarkjs.wtns.calculate(input, wasmFastFile, wtnsFastFile);
-
-    if (!wtnsFastFile.data) {
-      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate witness for circuit named: ${circuit.name}`);
-    }
-
-    if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.wtns`), wtnsFastFile.data);
-    }
-
-    const { proof, publicSignals } = await snarkjs.groth16.prove(beaconZkeyFastFile, wtnsFastFile);
-    const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
-    if (!verified) {
-      throw new HardhatPluginError(PLUGIN_NAME, `Could not verify the proof for circuit named: ${circuit.name}`);
-    }
-
-    await fs.mkdir(path.dirname(circuit.wasm), { recursive: true });
-    await fs.writeFile(circuit.wasm, wasmFastFile.data);
-
-    await fs.mkdir(path.dirname(circuit.zkey), { recursive: true });
-    await fs.writeFile(circuit.zkey, beaconZkeyFastFile.data);
-
-    await fs.mkdir(path.dirname(circuit.r1cs), { recursive: true });
-    await fs.writeFile(circuit.r1cs, r1csFastFile.data);
-
-    await fs.mkdir(path.dirname(circuit.vkey), { recursive: true });
-    await fs.writeFile(circuit.vkey, JSON.stringify(verificationKey));
-
-    zkeys.push({ type: "mem", name: circuit.name, data: beaconZkeyFastFile.data });
   }
 
   await hre.run(TASK_CIRCOM_TEMPLATE, { zkeys: zkeys });
