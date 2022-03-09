@@ -96,6 +96,11 @@ describe("Hardhat Circom", function () {
       assert.equal(first.beacon, "0000000005060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     });
 
+    it("second circuit plonk protocol", function () {
+      const first = this.hre.config.circom.circuits[1];
+      assert.equal(first.protocol, "plonk");
+    });
+
     it("Should override inputBasePath and circuit name", function () {
       const third = this.hre.config.circom.circuits[2];
       assertPathEqualsAbsolute(third.circuit, "/circuits/circuit.circom");
