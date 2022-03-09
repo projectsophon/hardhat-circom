@@ -11,7 +11,7 @@ By providing configuration containing your Phase 1 Powers of Tau and circuits, t
 1. Compile the circuits
 2. Apply the final beacon
 3. Output your `wasm` and `zkey` files
-4. Generate and output a `Verifier.sol`
+4. Generate and output Verifier contracts
 
 ## Installation
 
@@ -33,7 +33,7 @@ import "hardhat-circom";
 
 ## Tasks
 
-This plugin adds the `circom` task to build circuit(s) into `wasm` and `zkey` file and template them to a `Verifier.sol` contract saved to the Hardhat sources directory (usually `contracts/`).
+This plugin adds the `circom` task to build circuit(s) into `wasm` and `zkey` file and template them to seperate Verifier contracts saved to the Hardhat sources directory (usually `contracts/`).
 
 ```bash
 Usage: hardhat [GLOBAL OPTIONS] circom [--deterministic <BOOLEAN>] [--debug <BOOLEAN>]
@@ -78,7 +78,7 @@ j:~/best_dapp_ever/ $ tree
     └── pot15_final.ptau
 ```
 
-Now, you can use `npx hardhat circom --verbose` to compile the circuits and output `Verifier.sol`, `init.zkey`, and `init.wasm` files into their respective directories:
+Now, you can use `npx hardhat circom --verbose` to compile the circuits and output `InitVerifier.sol`, `init.zkey`, and `init.wasm` files into their respective directories:
 
 ```bash
 j:~/best_dapp_ever/ $ tree
@@ -89,7 +89,7 @@ j:~/best_dapp_ever/ $ tree
 │   ├── init.zkey
 │   └── pot15_final.ptau
 └── contracts
-    └── Verifier.sol
+    └── InitVerifier.sol
 ```
 
 ## Advanced configuration
@@ -147,7 +147,8 @@ j:~/best_dapp_ever/ $ tree
 │   ├── init.zkey
 │   └── play.zkey
 ├── contracts
-│   └── Verifier.sol
+│   ├── InitVerifier.sol
+│   └── PlayVerifier.sol
 └── mycircuits
     ├── init
     │   ├── circuit.circom
@@ -164,39 +165,46 @@ You must provide a Powers of Tau from a Phase 1 ceremony. We recommend using one
 
 These are all named `powersOfTau28_hez_final_*.ptau` where the `*` is some number. This number indicates the number of constraints (`2^x`) that can exist in your circuits.
 
-## Verifier.sol and templating
+## Verifier contracts and templating
 
-This plugin provides a custom `Verifier.sol` template that injects mutliple circuit verifiers into a single Solidity contract.
+This plugin defers to the Solidity templates provided by SnarkJS, which generates a Verifier contract for each circuit.
 
-**However, there are no guarantees this template is audited or up to date. It would be best to override the template by hooking the templating task yourself (exported as `TASK_CIRCOM_TEMPLATE`).**
+**However, there are no guarantees these templates are audited or up to date. It would be best to override it by hooking the templating task yourself (exported as `TASK_CIRCOM_TEMPLATE`).**
 
 You can hook the `TASK_CIRCOM_TEMPLATE` to output your own `Verifier.sol` contract.
 
-For example, if you wanted to output a Verifier per circuit using the bundled snarkjs template:
+For example, if you wanted to output a single Verifier for all your circuits:
 
 ```js
 import * as path from "path";
 import * as fs from "fs/promises";
-import resolve from "resolve";
 import { TASK_CIRCOM_TEMPLATE } from "hardhat-circom";
 import { subtask } from "hardhat/config";
 
 subtask(TASK_CIRCOM_TEMPLATE, "generate Verifier template shipped by SnarkjS").setAction(circomTemplate);
 
 async function circomTemplate({ zkeys }, hre) {
-  const snarkjsTemplate = resolve.sync("snarkjs/templates/verifier_groth16.sol");
+  const myGroth16Template = await fs.readSync(path.resolve("./my_verifier_groth16.sol"), "utf8");
+  const myPlonkTemplate = await fs.readSync(path.resolve("./my_verifier_plonk.sol"), "utf8");
 
+  let combinedVerifier = "";
   for (const zkey of zkeys) {
-    const verifierSol = await hre.snarkjs.zKey.exportSolidityVerifier(zkey, snarkjsTemplate);
-    const verifierPath = path.join(hre.config.paths.sources, `Verifier_${zkey.name}.sol`);
-    await fs.writeFile(verifierPath, verifierSol);
+    const verifierSol = await hre.snarkjs.zKey.exportSolidityVerifier(zkey, {
+      groth16: myGroth16Template,
+      plonk: myPlonkTemplate,
+    });
+
+    combinedVerifier += verifierSol;
   }
+
+  const verifierPath = path.join(hre.config.paths.sources, "Verifier.sol");
+  await fs.writeFile(verifierPath, combinedVerifier);
 }
 ```
 
 ## Determinism
 
-When you recompile the same circuit, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your `Verifier.sol` to be updated.
+When you recompile the same circuit, even with no changes, this plugin will apply a new final beacon, changing all the zkey output files. This also causes your Verifier contracts to be updated.
 
 This causes lots of churn on large binary files in git, and makes it hard to know if you've actually made fundamental changes between commits.
 
