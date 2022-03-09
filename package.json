@@ -25,6 +25,7 @@
     "watch": "tsc -w"
   },
   "dependencies": {
+    "camelcase": "^6.3.0",
     "circom": "0.5.46",
     "debug": "^4.3.3",
     "snarkjs": "^0.4.14"

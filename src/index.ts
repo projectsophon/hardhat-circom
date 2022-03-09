@@ -4,6 +4,7 @@ import * as fs from "fs/promises";
 import { existsSync } from "fs";
 import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
+import camelcase from "camelcase";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
 
 import snarkjs from "./snarkjs";
@@ -411,9 +412,13 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
 
     const finalSol = warning + circuitSol;
 
-    const capName = zkey.name.charAt(0).toUpperCase() + zkey.name.slice(1);
+    const name = camelcase(zkey.name, {
+      pascalCase: true,
+      preserveConsecutiveUppercase: true,
+      locale: false,
+    });
 
-    const verifier = path.join(hre.config.paths.sources, `${capName}Verifier.sol`);
+    const verifier = path.join(hre.config.paths.sources, `${name}Verifier.sol`);
 
     await fs.mkdir(path.dirname(verifier), { recursive: true });
 
