@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "circom": "0.5.45",
-    "circomlib": "^0.2.4",
     "debug": "^4.3.1",
     "snarkjs": "^0.4.14"
   },
