@@ -4,9 +4,10 @@ import * as snarkjs from "snarkjs";
 
 const pluginLogger: { [key: string]: Debugger } = {};
 
-for (const level of ["debug", "info", "warn", "error"]) {
+type Level = "debug" | "info" | "warn" | "error";
+for (const level of ["debug", "info", "warn", "error"] as Level[]) {
   pluginLogger[level] = debug(`hardhat-circom:${level}`);
-  pluginLogger[level].log = console[level as keyof Console].bind(console);
+  pluginLogger[level].log = console[level].bind(console);
 }
 
 // This is extremely fragile and could break with SnarkJS updates
