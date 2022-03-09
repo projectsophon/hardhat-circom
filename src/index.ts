@@ -324,7 +324,9 @@ async function circomCompile(
   for (const circuit of hre.config.circom.circuits) {
     const r1csFastFile: MemFastFile = { type: "mem" };
     const wasmFastFile: MemFastFile = { type: "mem" };
+    const watFastFile: MemFastFile = { type: "mem" };
     await circomCompiler.compiler(circuit.circuit, {
+      watFileName: watFastFile,
       wasmFileName: wasmFastFile,
       r1csFileName: r1csFastFile,
     });
@@ -339,6 +341,11 @@ async function circomCompile(
     if (debug) {
       await fs.writeFile(path.join(debugPath, `${circuit.name}.r1cs`), r1csFastFile.data);
       await fs.writeFile(path.join(debugPath, `${circuit.name}.wasm`), wasmFastFile.data);
+
+      // The .wat file is only used for debug
+      if (watFastFile.data) {
+        await fs.writeFile(path.join(debugPath, `${circuit.name}.wat`), watFastFile.data);
+      }
     }
 
     const _cir = await snarkjs.r1cs.info(r1csFastFile);
