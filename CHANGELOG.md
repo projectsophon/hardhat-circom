@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.0.0](https://www.github.com/projectsophon/hardhat-circom/compare/v1.2.0...v2.0.0) (2022-03-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* Generate separate verifiers by default
+* Remove circomlib since it is a consumer dependency
+
+### Features
+
+* Add `--circuit` CLI parameter to compile one circuit by name ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+* Generate separate verifiers by default ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+* Implement plonk protocol ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+* PascalCase Verifier contract names ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+* Update snarkjs ([#35](https://www.github.com/projectsophon/hardhat-circom/issues/35)) ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+* Update snarkjs typescript bindings for plonk ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+* Write wat output for debugging ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+
+
+### Miscellaneous Chores
+
+* Remove circomlib since it is a consumer dependency ([f75a306](https://www.github.com/projectsophon/hardhat-circom/commit/f75a3069d3c87cde20b4e22d872721416fd50aa6))
+
 ## [1.2.0](https://www.github.com/projectsophon/hardhat-circom/compare/v1.1.0...v1.2.0) (2021-10-24)
 
 ### Features
