@@ -248,3 +248,17 @@ async function circuitsCompile(args, hre, runSuper) {
   await runSuper();
 }
 ```
+
+## Circomlib
+
+When working with `circom` (before "circom 2") and `circomlib`, you'll probably need to add a `circom` resolution to your `package.json` because `circomlib` v0.5.5 pins `circom` to v0.5.33, but we need v0.5.46 for this plugin.
+
+In your `package.json`, add:
+
+```diff
++  "resolutions": {
++    "circom": "0.5.46"
++  },
+```
+
+And then install with yarn.
