@@ -224,6 +224,12 @@ async function groth16({
   }
 
   const { proof, publicSignals } = await snarkjs.groth16.prove(beaconZkeyFastFile, wtnsFastFile);
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.proof.json`), JSON.stringify(proof));
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.public.json`), JSON.stringify(publicSignals));
+  }
+
   const verified = await snarkjs.groth16.verify(verificationKey, publicSignals, proof);
   if (!verified) {
     throw new HardhatPluginError(PLUGIN_NAME, `Could not verify the proof for circuit named: ${circuit.name}`);
@@ -284,6 +290,12 @@ async function plonk({
   }
 
   const { proof, publicSignals } = await snarkjs.plonk.prove(newKeyFastFile, wtnsFastFile);
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.proof.json`), JSON.stringify(proof));
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.public.json`), JSON.stringify(publicSignals));
+  }
+
   const verified = await snarkjs.plonk.verify(verificationKey, publicSignals, proof);
   if (!verified) {
     throw new HardhatPluginError(PLUGIN_NAME, `Could not verify the proof for circuit named: ${circuit.name}`);
