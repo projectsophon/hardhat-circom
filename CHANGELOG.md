@@ -2,10 +2,9 @@
 
 ## [2.1.0](https://www.github.com/projectsophon/hardhat-circom/compare/v2.0.0...v2.1.0) (2022-03-11)
 
-
 ### Features
 
-* Add debug output for proof.json & public.json ([#38](https://www.github.com/projectsophon/hardhat-circom/issues/38)) ([ecfd2f5](https://www.github.com/projectsophon/hardhat-circom/commit/ecfd2f5bd63cb063ed251e624f688f091acbe7dd))
+- Add debug output for proof.json & public.json ([#38](https://www.github.com/projectsophon/hardhat-circom/issues/38)) ([ecfd2f5](https://www.github.com/projectsophon/hardhat-circom/commit/ecfd2f5bd63cb063ed251e624f688f091acbe7dd))
 
 ## [2.0.0](https://www.github.com/projectsophon/hardhat-circom/compare/v1.2.0...v2.0.0) (2022-03-09)
 
