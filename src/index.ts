@@ -460,46 +460,28 @@ async function circomCompile(
       continue;
     }
 
-    let r1cs;
-    let wasm;
-    if (circuit.version === 1) {
-      const output = await circom1({
-        circuit,
-        debug: debug ? { path: debugPath } : undefined,
-      });
-      r1cs = output.r1cs;
-      wasm = output.wasm;
-    } else {
-      const output = await circom2({
-        circuit,
-        debug: debug ? { path: debugPath } : undefined,
-      });
-      r1cs = output.r1cs;
-      wasm = output.wasm;
-    }
+    const compiler = circuit.version === 1 ? circom1 : circom2;
+
+    const { r1cs, wasm } = await compiler({
+      circuit,
+      debug: debug ? { path: debugPath } : undefined,
+    });
 
     const _cir = await snarkjs.r1cs.info(r1cs);
 
-    if (circuit.protocol === "groth16") {
-      const zkey = await groth16({
-        circuit,
-        deterministic,
-        debug: debug ? { path: debugPath } : undefined,
-        wasm,
-        r1cs,
-        ptau,
-      });
-      zkeys.push(zkey);
-    } else {
-      const zkey = await plonk({
-        circuit,
-        debug: debug ? { path: debugPath } : undefined,
-        wasm,
-        r1cs,
-        ptau,
-      });
-      zkeys.push(zkey);
-    }
+    const snarker = circuit.protocol === "groth16" ? groth16 : plonk;
+
+    const zkey = await snarker({
+      circuit,
+      debug: debug ? { path: debugPath } : undefined,
+      wasm,
+      r1cs,
+      ptau,
+      // Only used by groth16
+      deterministic,
+    });
+
+    zkeys.push(zkey);
   }
 
   await hre.run(TASK_CIRCOM_TEMPLATE, { zkeys: zkeys });
