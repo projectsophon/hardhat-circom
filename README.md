@@ -36,12 +36,13 @@ import "hardhat-circom";
 This plugin adds the `circom` task to build circuit(s) into `wasm` and `zkey` file and template them to seperate Verifier contracts saved to the Hardhat sources directory (usually `contracts/`).
 
 ```bash
-Usage: hardhat [GLOBAL OPTIONS] circom [--deterministic <BOOLEAN>] [--debug <BOOLEAN>]
+Usage: hardhat [GLOBAL OPTIONS] circom --circuit <STRING> [--debug] [--deterministic]
 
 OPTIONS:
 
-  --debug               output intermediate files to artifacts directory, generally for debug
-  --deterministic       enable deterministic builds (except for .wasm)
+  --circuit      	limit your circom task to a single circuit name
+  --debug        	output intermediate files to artifacts directory, generally for debug
+  --deterministic	enable deterministic builds for groth16 protocol circuits (except for .wasm)
 
 circom: compile circom circuits and template Verifier
 
