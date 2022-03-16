@@ -110,6 +110,8 @@ module.exports = {
       {
         // (required) The name of the circuit
         name: "init",
+        // (optional) The circom version used to compile circuits (1 or 2), defaults to 2
+        version: 2,
         // (optional) Protocol used to build circuits ("groth16" or "plonk"), defaults to "groth16"
         protocol: "groth16",
         // (optional) Input path for circuit file, inferred from `name` if unspecified
@@ -125,6 +127,7 @@ module.exports = {
       },
       {
         name: "play",
+        version: 1,
         protocol: "plonk",
         circuit: "play/circuit.circom",
         input: "play/input.json",
