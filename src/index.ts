@@ -160,7 +160,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
 
     config.circom.circuits.push({
       name: name,
-      version: version !== 2 ? 1 : 2,
+      version: version !== 1 ? 2 : 1,
       protocol: protocol !== "plonk" ? "groth16" : "plonk",
       beacon: beacon != null ? beacon : "0000000000000000000000000000000000000000000000000000000000000000",
       circuit: circuitPath,

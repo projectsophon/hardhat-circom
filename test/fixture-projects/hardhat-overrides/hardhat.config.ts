@@ -25,7 +25,7 @@ const config: HardhatUserConfig = {
       },
       {
         name: "init",
-        version: 2,
+        version: 1,
         circuit: "circuit.circom",
         input: "input.json",
         wasm: "circuit.wasm",
