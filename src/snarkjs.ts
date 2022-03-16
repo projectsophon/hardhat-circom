@@ -1,14 +1,7 @@
-import debug, { Debugger } from "debug";
 // @ts-ignore because they don't ship types
 import * as snarkjs from "snarkjs";
 
-const pluginLogger: { [key: string]: Debugger } = {};
-
-type Level = "debug" | "info" | "warn" | "error";
-for (const level of ["debug", "info", "warn", "error"] as Level[]) {
-  pluginLogger[level] = debug(`hardhat-circom:${level}`);
-  pluginLogger[level].log = console[level].bind(console);
-}
+import pluginLogger from "./logger";
 
 // This is extremely fragile and could break with SnarkJS updates
 // TODO: Get the logger stuff upstreamed?

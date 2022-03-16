@@ -8,8 +8,10 @@ import { existsSync } from "fs";
 import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
 import camelcase from "camelcase";
+import shimmer from "shimmer";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
 
+import logger from "./logger";
 import snarkjs from "./snarkjs";
 // @ts-ignore because they don't ship types
 import * as circom1Compiler from "circom";
@@ -25,6 +27,17 @@ declare module "hardhat/types/runtime" {
     snarkjs: typeof snarkjs;
   }
 }
+
+// Awaited taken from a newer TypeScript
+type Awaited<T> = T extends null | undefined
+  ? T // special case for `null | undefined` when not in `--strictNullChecks` mode
+  : // eslint-disable-next-line @typescript-eslint/ban-types, @typescript-eslint/no-explicit-any
+  T extends object & { then(onfulfilled: infer F): any } // `await` only unwraps object types with a callable `then`. Non-object types are not unwrapped
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    F extends (value: infer V, ...args: any) => any // if the argument to `then` is callable, extracts the first argument
+    ? Awaited<V> // recursively unwrap the value
+    : never // the argument to `then` was not callable
+  : T; // non-object or non-thenable
 
 extendEnvironment((hre) => {
   hre.circom = circom1Compiler;
@@ -227,6 +240,84 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
   // Make the r1cs directory so it doesn't defer to nodefs for writing
   // but don't make the wasm directory because otherwise circom2 won't proceed
   await ufs.promises.mkdir(r1csDir, { recursive: true });
+
+  let stdout = "";
+  let stderr = "";
+  // We wrap the writeSync function because circom2 doesn't allow us to
+  // configure the logging and it doesn't exit with proper exit codes
+  shimmer.wrap(ufs, "writeSync", function (original) {
+    return function (
+      fd: number,
+      data: NodeJS.ArrayBufferView | string,
+      offsetOrPosition?: number | null | undefined,
+      lengthOrEncoding?: number | null | undefined | BufferEncoding,
+      position?: number | null | undefined
+    ): number {
+      // If writing to stdout, we hijack to hide unless debug
+      if (fd === 1) {
+        if (typeof data === "string") {
+          stdout += data;
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stdout.endsWith("\n")) {
+            const msg = stdout.trim();
+            stdout = "";
+            logger.info(msg);
+          }
+          return data.length;
+        } else {
+          stdout += new TextDecoder().decode(data);
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stdout.endsWith("\n")) {
+            const msg = stdout.trim();
+            stdout = "";
+            logger.info(msg);
+          }
+          return data.byteLength;
+        }
+      }
+
+      // If writing to stderr, we hijack and throw an error
+      if (fd == 2) {
+        if (typeof data === "string") {
+          stderr += data;
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stderr.endsWith("\n")) {
+            const msg = stderr.trim();
+            stderr = "";
+            throw new Error(msg);
+          }
+          return data.length;
+        } else {
+          stderr += new TextDecoder().decode(data);
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stderr.endsWith("\n")) {
+            const msg = stderr.trim();
+            stderr = "";
+            throw new Error(msg);
+          }
+          return data.byteLength;
+        }
+      }
+
+      if (typeof data === "string") {
+        if (typeof lengthOrEncoding !== "number") {
+          return original(fd, data, offsetOrPosition, lengthOrEncoding);
+        } else {
+          throw Error("Invalid arguments");
+        }
+      } else {
+        if (typeof lengthOrEncoding !== "string") {
+          return original(fd, data, offsetOrPosition, lengthOrEncoding, position);
+        } else {
+          throw Error("Invalid arguments");
+        }
+      }
+    };
+  });
 
   const circom = new CircomRunner({
     args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "-o", r1csDir],
@@ -462,10 +553,18 @@ async function circomCompile(
 
     const compiler = circuit.version === 1 ? circom1 : circom2;
 
-    const { r1cs, wasm } = await compiler({
-      circuit,
-      debug: debug ? { path: debugPath } : undefined,
-    });
+    let compilerOutput: Awaited<ReturnType<typeof compiler>>;
+
+    try {
+      compilerOutput = await compiler({
+        circuit,
+        debug: debug ? { path: debugPath } : undefined,
+      });
+    } catch (err) {
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to compile circuit named: ${circuit.name}`, err as Error);
+    }
+
+    const { r1cs, wasm } = compilerOutput;
 
     const _cir = await snarkjs.r1cs.info(r1cs);
 

@@ -106,6 +106,11 @@ describe("Hardhat Circom", function () {
       assertPathEqualsAbsolute(third.circuit, "/circuits/circuit.circom");
     });
 
+    it("Should override version", function () {
+      const third = this.hre.config.circom.circuits[2];
+      assert.equal(third.version, 2);
+    });
+
     it("Should override inputBasePath and input name", function () {
       const third = this.hre.config.circom.circuits[2];
       assertPathEqualsAbsolute(third.input, "/circuits/input.json");
