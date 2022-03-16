@@ -8,8 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        node-version: [14.x]
+        os: [ubuntu-latest]
+        node-version: [16.x]
 
     runs-on: ${{ matrix.os }}
 

@@ -1,15 +1,22 @@
 import * as path from "path";
 import * as crypto from "crypto";
 import * as fs from "fs/promises";
+import * as nodefs from "fs";
+import { ufs } from "@phated/unionfs";
+import { Volume, createFsFromVolume } from "memfs";
 import { existsSync } from "fs";
 import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
 import camelcase from "camelcase";
+import shimmer from "shimmer";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
 
+import logger from "./logger";
 import snarkjs from "./snarkjs";
 // @ts-ignore because they don't ship types
-import * as circomCompiler from "circom";
+import * as circom1Compiler from "circom";
+// @ts-ignore because they don't ship types
+import { CircomRunner, bindings } from "circom2";
 
 declare module "hardhat/types/runtime" {
   interface HardhatRuntimeEnvironment {
@@ -21,8 +28,19 @@ declare module "hardhat/types/runtime" {
   }
 }
 
+// Awaited taken from a newer TypeScript
+type Awaited<T> = T extends null | undefined
+  ? T // special case for `null | undefined` when not in `--strictNullChecks` mode
+  : // eslint-disable-next-line @typescript-eslint/ban-types, @typescript-eslint/no-explicit-any
+  T extends object & { then(onfulfilled: infer F): any } // `await` only unwraps object types with a callable `then`. Non-object types are not unwrapped
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    F extends (value: infer V, ...args: any) => any // if the argument to `then` is callable, extracts the first argument
+    ? Awaited<V> // recursively unwrap the value
+    : never // the argument to `then` was not callable
+  : T; // non-object or non-thenable
+
 extendEnvironment((hre) => {
-  hre.circom = circomCompiler;
+  hre.circom = circom1Compiler;
   hre.snarkjs = snarkjs;
 });
 
@@ -39,6 +57,7 @@ declare module "hardhat/types/config" {
 
 export interface CircomCircuitUserConfig {
   name?: string;
+  version?: 1 | 2;
   protocol?: "groth16" | "plonk";
   circuit?: string;
   input?: string;
@@ -51,6 +70,7 @@ export interface CircomCircuitUserConfig {
 
 export interface CircomCircuitConfig {
   name: string;
+  version: 1 | 2;
   protocol: "groth16" | "plonk";
   circuit: string;
   input: string;
@@ -123,7 +143,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
     circuits: [],
   };
 
-  for (const { name, protocol, beacon, circuit, input, wasm, r1cs, zkey, vkey } of circuits) {
+  for (const { name, version, protocol, beacon, circuit, input, wasm, r1cs, zkey, vkey } of circuits) {
     if (!name) {
       throw new HardhatPluginError(
         PLUGIN_NAME,
@@ -140,7 +160,8 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
 
     config.circom.circuits.push({
       name: name,
-      protocol: protocol ?? "groth16",
+      version: version !== 1 ? 2 : 1,
+      protocol: protocol !== "plonk" ? "groth16" : "plonk",
       beacon: beacon != null ? beacon : "0000000000000000000000000000000000000000000000000000000000000000",
       circuit: circuitPath,
       input: inputPath,
@@ -159,6 +180,197 @@ async function getInputJson(input: string) {
   } catch (err) {
     throw new HardhatPluginError(PLUGIN_NAME, `Failed to parse JSON in file: ${input}`, err as Error);
   }
+}
+
+async function circom1({ circuit, debug }: { circuit: CircomCircuitConfig; debug?: { path: string } }) {
+  const r1csFastFile: MemFastFile = { type: "mem" };
+  const wasmFastFile: MemFastFile = { type: "mem" };
+  const watFastFile: MemFastFile = { type: "mem" };
+  await circom1Compiler.compiler(circuit.circuit, {
+    watFileName: watFastFile,
+    wasmFileName: wasmFastFile,
+    r1csFileName: r1csFastFile,
+  });
+
+  if (!r1csFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate r1cs for circuit named: ${circuit.name}`);
+  }
+  if (!wasmFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate wasm for circuit named: ${circuit.name}`);
+  }
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.r1cs`), r1csFastFile.data);
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.wasm`), wasmFastFile.data);
+
+    // The .wat file is only used for debug
+    if (watFastFile.data) {
+      await fs.writeFile(path.join(debug.path, `${circuit.name}.wat`), watFastFile.data);
+    }
+  }
+
+  return {
+    // the `.data` property is checked above
+    r1cs: r1csFastFile as Required<MemFastFile>,
+    wasm: wasmFastFile as Required<MemFastFile>,
+  } as const;
+}
+
+async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug?: { path: string } }) {
+  // Prepare a virtual filesystem because circom2 only operates on files
+  const vol = Volume.fromJSON({
+    "/dev/stdin": "",
+    "/dev/stdout": "",
+    "/dev/stderr": "",
+  });
+  const memfs = createFsFromVolume(vol);
+
+  // Using this order to prefer writing virtual files from the circom2 wasm
+  ufs
+    .use(nodefs)
+    // I hate typescript
+    .use(memfs as unknown as typeof nodefs);
+
+  const r1csDir = path.dirname(circuit.r1cs);
+  // We build virtual paths here because circom2 outputs these into dumb places
+  const wasmDir = path.join(path.dirname(circuit.wasm), `${circuit.name}_js`);
+  const wasmVirtualPath = path.join(wasmDir, `${circuit.name}.wasm`);
+  const watVirtualPath = path.join(wasmDir, `${circuit.name}.wat`);
+
+  // Make the r1cs directory so it doesn't defer to nodefs for writing
+  // but don't make the wasm directory because otherwise circom2 won't proceed
+  await ufs.promises.mkdir(r1csDir, { recursive: true });
+
+  let stdout = "";
+  let stderr = "";
+  // We wrap the writeSync function because circom2 doesn't allow us to
+  // configure the logging and it doesn't exit with proper exit codes
+  shimmer.wrap(ufs, "writeSync", function (original) {
+    return function (
+      fd: number,
+      data: NodeJS.ArrayBufferView | string,
+      offsetOrPosition?: number | null | undefined,
+      lengthOrEncoding?: number | null | undefined | BufferEncoding,
+      position?: number | null | undefined
+    ): number {
+      // If writing to stdout, we hijack to hide unless debug
+      if (fd === 1) {
+        if (typeof data === "string") {
+          stdout += data;
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stdout.endsWith("\n")) {
+            const msg = stdout.trim();
+            stdout = "";
+            logger.info(msg);
+          }
+          return data.length;
+        } else {
+          stdout += new TextDecoder().decode(data);
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stdout.endsWith("\n")) {
+            const msg = stdout.trim();
+            stdout = "";
+            logger.info(msg);
+          }
+          return data.byteLength;
+        }
+      }
+
+      // If writing to stderr, we hijack and throw an error
+      if (fd == 2) {
+        if (typeof data === "string") {
+          stderr += data;
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stderr.endsWith("\n")) {
+            const msg = stderr.trim();
+            stderr = "";
+            throw new Error(msg);
+          }
+          return data.length;
+        } else {
+          stderr += new TextDecoder().decode(data);
+          // This is a little fragile, but we assume the wasmer-js
+          // terminal character is a newline by itself
+          if (stderr.endsWith("\n")) {
+            const msg = stderr.trim();
+            stderr = "";
+            throw new Error(msg);
+          }
+          return data.byteLength;
+        }
+      }
+
+      if (typeof data === "string") {
+        if (typeof lengthOrEncoding !== "number") {
+          return original(fd, data, offsetOrPosition, lengthOrEncoding);
+        } else {
+          throw Error("Invalid arguments");
+        }
+      } else {
+        if (typeof lengthOrEncoding !== "string") {
+          return original(fd, data, offsetOrPosition, lengthOrEncoding, position);
+        } else {
+          throw Error("Invalid arguments");
+        }
+      }
+    };
+  });
+
+  const circom = new CircomRunner({
+    args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "-o", r1csDir],
+    env: {},
+    // Preopen from the root because we use absolute paths
+    preopens: {
+      "/": "/",
+    },
+    bindings: {
+      ...bindings,
+      fs: ufs,
+    },
+  });
+
+  const circomWasm = await fs.readFile(require.resolve("circom2/circom.wasm"));
+
+  await circom.execute(circomWasm);
+
+  const r1csFastFile: MemFastFile = {
+    type: "mem",
+    data: await ufs.promises.readFile(circuit.r1cs),
+  };
+  const wasmFastFile: MemFastFile = {
+    type: "mem",
+    data: await ufs.promises.readFile(wasmVirtualPath),
+  };
+  const watFastFile: MemFastFile = {
+    type: "mem",
+    data: await ufs.promises.readFile(watVirtualPath),
+  };
+
+  if (!r1csFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate r1cs for circuit named: ${circuit.name}`);
+  }
+  if (!wasmFastFile.data) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate wasm for circuit named: ${circuit.name}`);
+  }
+
+  if (debug) {
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.r1cs`), r1csFastFile.data);
+    await fs.writeFile(path.join(debug.path, `${circuit.name}.wasm`), wasmFastFile.data);
+
+    // The .wat file is only used for debug
+    if (watFastFile.data) {
+      await fs.writeFile(path.join(debug.path, `${circuit.name}.wat`), watFastFile.data);
+    }
+  }
+
+  return {
+    // the `.data` property is checked above
+    r1cs: r1csFastFile as Required<MemFastFile>,
+    wasm: wasmFastFile as Required<MemFastFile>,
+  } as const;
 }
 
 async function groth16({
@@ -339,56 +551,36 @@ async function circomCompile(
       continue;
     }
 
-    const r1csFastFile: MemFastFile = { type: "mem" };
-    const wasmFastFile: MemFastFile = { type: "mem" };
-    const watFastFile: MemFastFile = { type: "mem" };
-    await circomCompiler.compiler(circuit.circuit, {
-      watFileName: watFastFile,
-      wasmFileName: wasmFastFile,
-      r1csFileName: r1csFastFile,
+    const compiler = circuit.version === 1 ? circom1 : circom2;
+
+    let compilerOutput: Awaited<ReturnType<typeof compiler>>;
+
+    try {
+      compilerOutput = await compiler({
+        circuit,
+        debug: debug ? { path: debugPath } : undefined,
+      });
+    } catch (err) {
+      throw new HardhatPluginError(PLUGIN_NAME, `Unable to compile circuit named: ${circuit.name}`, err as Error);
+    }
+
+    const { r1cs, wasm } = compilerOutput;
+
+    const _cir = await snarkjs.r1cs.info(r1cs);
+
+    const snarker = circuit.protocol === "groth16" ? groth16 : plonk;
+
+    const zkey = await snarker({
+      circuit,
+      debug: debug ? { path: debugPath } : undefined,
+      wasm,
+      r1cs,
+      ptau,
+      // Only used by groth16
+      deterministic,
     });
 
-    if (!r1csFastFile.data) {
-      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate r1cs for circuit named: ${circuit.name}`);
-    }
-    if (!wasmFastFile.data) {
-      throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate wasm for circuit named: ${circuit.name}`);
-    }
-
-    if (debug) {
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.r1cs`), r1csFastFile.data);
-      await fs.writeFile(path.join(debugPath, `${circuit.name}.wasm`), wasmFastFile.data);
-
-      // The .wat file is only used for debug
-      if (watFastFile.data) {
-        await fs.writeFile(path.join(debugPath, `${circuit.name}.wat`), watFastFile.data);
-      }
-    }
-
-    const _cir = await snarkjs.r1cs.info(r1csFastFile);
-
-    if (circuit.protocol === "groth16") {
-      const zkey = await groth16({
-        circuit,
-        deterministic,
-        debug: debug ? { path: debugPath } : undefined,
-        // the `.data` property is checked above
-        wasm: wasmFastFile as Required<MemFastFile>,
-        r1cs: r1csFastFile as Required<MemFastFile>,
-        ptau,
-      });
-      zkeys.push(zkey);
-    } else {
-      const zkey = await plonk({
-        circuit,
-        debug: debug ? { path: debugPath } : undefined,
-        // the `.data` property is checked above
-        wasm: wasmFastFile as Required<MemFastFile>,
-        r1cs: r1csFastFile as Required<MemFastFile>,
-        ptau,
-      });
-      zkeys.push(zkey);
-    }
+    zkeys.push(zkey);
   }
 
   await hre.run(TASK_CIRCOM_TEMPLATE, { zkeys: zkeys });

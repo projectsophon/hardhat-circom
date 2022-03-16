@@ -6,7 +6,7 @@
   "repository": "projectsophon/hardhat-circom",
   "license": "GPL-3.0",
   "engines": {
-    "node": ">=14"
+    "node": ">=16"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,9 +25,13 @@
     "watch": "tsc -w"
   },
   "dependencies": {
+    "@phated/unionfs": "^4.5.0",
     "camelcase": "^6.3.0",
     "circom": "0.5.46",
+    "circom2": "^0.2.0",
     "debug": "^4.3.3",
+    "memfs": "^3.4.1",
+    "shimmer": "^1.2.1",
     "snarkjs": "^0.4.14"
   },
   "peerDependencies": {
@@ -41,6 +45,7 @@
     "@types/debug": "^4.1.7",
     "@types/mocha": "^8.2.0",
     "@types/node": "^14.14.22",
+    "@types/shimmer": "^1.0.2",
     "chai": "^4.3.6",
     "eslint": "^7.25.0",
     "hardhat": "^2.9.1",

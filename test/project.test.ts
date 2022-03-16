@@ -36,6 +36,16 @@ describe("Hardhat Circom", function () {
       assert.equal(first.beacon, "0000000000000000000000000000000000000000000000000000000000000000");
     });
 
+    it("defaults to groth16", function () {
+      const first = this.hre.config.circom.circuits[0];
+      assert.equal(first.protocol, "groth16");
+    });
+
+    it("defaults to circom version 2", function () {
+      const first = this.hre.config.circom.circuits[0];
+      assert.equal(first.version, 2);
+    });
+
     it("Should use default inputBasePath and circuit name", function () {
       const first = this.hre.config.circom.circuits[0];
       assertPathIncludes(first.circuit, "/hardhat-defaults/circuits/hash.circom");
@@ -104,6 +114,11 @@ describe("Hardhat Circom", function () {
     it("Should override inputBasePath and circuit name", function () {
       const third = this.hre.config.circom.circuits[2];
       assertPathEqualsAbsolute(third.circuit, "/circuits/circuit.circom");
+    });
+
+    it("Should override version", function () {
+      const third = this.hre.config.circom.circuits[2];
+      assert.equal(third.version, 1);
     });
 
     it("Should override inputBasePath and input name", function () {

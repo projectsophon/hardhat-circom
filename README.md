@@ -36,12 +36,13 @@ import "hardhat-circom";
 This plugin adds the `circom` task to build circuit(s) into `wasm` and `zkey` file and template them to seperate Verifier contracts saved to the Hardhat sources directory (usually `contracts/`).
 
 ```bash
-Usage: hardhat [GLOBAL OPTIONS] circom [--deterministic <BOOLEAN>] [--debug <BOOLEAN>]
+Usage: hardhat [GLOBAL OPTIONS] circom --circuit <STRING> [--debug] [--deterministic]
 
 OPTIONS:
 
-  --debug               output intermediate files to artifacts directory, generally for debug
-  --deterministic       enable deterministic builds (except for .wasm)
+  --circuit      	limit your circom task to a single circuit name
+  --debug        	output intermediate files to artifacts directory, generally for debug
+  --deterministic	enable deterministic builds for groth16 protocol circuits (except for .wasm)
 
 circom: compile circom circuits and template Verifier
 
@@ -110,6 +111,8 @@ module.exports = {
       {
         // (required) The name of the circuit
         name: "init",
+        // (optional) The circom version used to compile circuits (1 or 2), defaults to 2
+        version: 2,
         // (optional) Protocol used to build circuits ("groth16" or "plonk"), defaults to "groth16"
         protocol: "groth16",
         // (optional) Input path for circuit file, inferred from `name` if unspecified
@@ -125,6 +128,7 @@ module.exports = {
       },
       {
         name: "play",
+        version: 1,
         protocol: "plonk",
         circuit: "play/circuit.circom",
         input: "play/input.json",
@@ -247,16 +251,4 @@ async function circuitsCompile(args, hre, runSuper) {
   await hre.run(TASK_CIRCOM, args);
   await runSuper();
 }
-```
-
-## Circomlib
-
-When working with `circom` (before "circom 2") and `circomlib`, you might need to add a `circom` resolution to your `package.json` because `circomlib` v0.5.5 pins `circom` to v0.5.33, but we need v0.5.46 for this plugin.
-
-Make sure you are using `yarn` and add the following to your `package.json`:
-
-```diff
-+  "resolutions": {
-+    "circom": "0.5.46"
-+  },
 ```
