@@ -28,14 +28,11 @@
     "@phated/unionfs": "^4.5.0",
     "camelcase": "^6.3.0",
     "circom": "0.5.46",
-    "circom2": "0.1.0",
+    "circom2": "^0.2.0",
     "debug": "^4.3.3",
     "memfs": "^3.4.1",
     "shimmer": "^1.2.1",
     "snarkjs": "^0.4.14"
-  },
-  "resolutions": {
-    "circom2": "link:../../circom/npm"
   },
   "peerDependencies": {
     "hardhat": "^2.0.0"

@@ -1063,13 +1063,14 @@ cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
     inherits "^2.0.1"
     safe-buffer "^5.0.1"
 
-circom2@0.1.0:
-  version "0.0.0"
-  uid ""
-
-"circom2@link:../../circom/npm":
-  version "0.0.0"
-  uid ""
+circom2@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/circom2/-/circom2-0.2.0.tgz#e4a254725d5b02fc084f556639e6fed72c443a40"
+  integrity sha512-ODA9cNWS3+JYZ5QmkX6OZolBj3i1Ra4Ga6FR5fNkUAmG0HdN4v4LIeFPBXQp156cF20rWEFCLoysAzZAJL5gLA==
+  dependencies:
+    "@wasmer/wasi" "^0.12.0"
+    is-typed-array "^1.1.8"
+    path-browserify "^1.0.1"
 
 circom@0.5.46:
   version "0.5.46"
