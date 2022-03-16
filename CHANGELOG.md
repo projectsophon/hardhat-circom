@@ -2,26 +2,23 @@
 
 ## [3.0.0](https://www.github.com/projectsophon/hardhat-circom/compare/v2.1.0...v3.0.0) (2022-03-16)
 
-
 ### ⚠ BREAKING CHANGES
 
-* Drop node 14 support
-* Implement circom2 compiler (#40)
+- Drop node 14 support
+- Implement circom2 compiler (#40)
 
 ### Features
 
-* Default circom version to 2 ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
-* Implement circom2 compiler ([#40](https://www.github.com/projectsophon/hardhat-circom/issues/40)) ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
-
+- Default circom version to 2 ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
+- Implement circom2 compiler ([#40](https://www.github.com/projectsophon/hardhat-circom/issues/40)) ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
 
 ### Bug Fixes
 
-* Hijack stdout/stderr from circom2 ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
-
+- Hijack stdout/stderr from circom2 ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
 
 ### Miscellaneous Chores
 
-* Drop node 14 support ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
+- Drop node 14 support ([d67af4e](https://www.github.com/projectsophon/hardhat-circom/commit/d67af4e5c69cb4867cfd9eee5d34aec712426ba2))
 
 ## [2.1.0](https://www.github.com/projectsophon/hardhat-circom/compare/v2.0.0...v2.1.0) (2022-03-11)
 
