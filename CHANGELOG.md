@@ -2,12 +2,11 @@
 
 ### [3.0.1](https://www.github.com/projectsophon/hardhat-circom/compare/v3.0.0...v3.0.1) (2022-03-17)
 
-
 ### Bug Fixes
 
-* Log circom2 errors before throwing ([5ac4f79](https://www.github.com/projectsophon/hardhat-circom/commit/5ac4f798fc76f81f989a3509ba8499947874287d))
-* Properly handle explicit circuit names w/ circom2 ([#44](https://www.github.com/projectsophon/hardhat-circom/issues/44)) ([5ac4f79](https://www.github.com/projectsophon/hardhat-circom/commit/5ac4f798fc76f81f989a3509ba8499947874287d))
-* Use the circuit directory for virtual paths ([5ac4f79](https://www.github.com/projectsophon/hardhat-circom/commit/5ac4f798fc76f81f989a3509ba8499947874287d))
+- Log circom2 errors before throwing ([5ac4f79](https://www.github.com/projectsophon/hardhat-circom/commit/5ac4f798fc76f81f989a3509ba8499947874287d))
+- Properly handle explicit circuit names w/ circom2 ([#44](https://www.github.com/projectsophon/hardhat-circom/issues/44)) ([5ac4f79](https://www.github.com/projectsophon/hardhat-circom/commit/5ac4f798fc76f81f989a3509ba8499947874287d))
+- Use the circuit directory for virtual paths ([5ac4f79](https://www.github.com/projectsophon/hardhat-circom/commit/5ac4f798fc76f81f989a3509ba8499947874287d))
 
 ## [3.0.0](https://www.github.com/projectsophon/hardhat-circom/compare/v2.1.0...v3.0.0) (2022-03-16)
 
