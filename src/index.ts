@@ -233,19 +233,17 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
 
   // Get the circuit's filename without extension
   // This is what circom2 names all files it outputs (with different extensions)
-  const { name: circuitName } = path.parse(circuit.circuit);
-
-  const r1csDir = path.dirname(circuit.r1cs);
-  const wasmDir = path.join(path.dirname(circuit.wasm), `${circuitName}_js`);
+  const { name: circuitName, dir } = path.parse(circuit.circuit);
+  const wasmDir = path.join(dir, `${circuitName}_js`);
 
   // We build virtual paths here because circom2 outputs these into dumb places
-  const r1csVirtualPath = path.join(r1csDir, `${circuitName}.r1cs`);
+  const r1csVirtualPath = path.join(dir, `${circuitName}.r1cs`);
   const wasmVirtualPath = path.join(wasmDir, `${circuitName}.wasm`);
   const watVirtualPath = path.join(wasmDir, `${circuitName}.wat`);
 
   // Make the r1cs directory so it doesn't defer to nodefs for writing
   // but don't make the wasm directory because otherwise circom2 won't proceed
-  await ufs.promises.mkdir(r1csDir, { recursive: true });
+  await ufs.promises.mkdir(dir, { recursive: true });
 
   let stdout = "";
   let stderr = "";
@@ -328,7 +326,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
   });
 
   const circom = new CircomRunner({
-    args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "-o", r1csDir],
+    args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "-o", dir],
     env: {},
     // Preopen from the root because we use absolute paths
     preopens: {
