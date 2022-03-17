@@ -231,15 +231,19 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
     // I hate typescript
     .use(memfs as unknown as typeof nodefs);
 
-  const r1csDir = path.dirname(circuit.r1cs);
+  // Get the circuit's filename without extension
+  // This is what circom2 names all files it outputs (with different extensions)
+  const { name: circuitName, dir } = path.parse(circuit.circuit);
+  const wasmDir = path.join(dir, `${circuitName}_js`);
+
   // We build virtual paths here because circom2 outputs these into dumb places
-  const wasmDir = path.join(path.dirname(circuit.wasm), `${circuit.name}_js`);
-  const wasmVirtualPath = path.join(wasmDir, `${circuit.name}.wasm`);
-  const watVirtualPath = path.join(wasmDir, `${circuit.name}.wat`);
+  const r1csVirtualPath = path.join(dir, `${circuitName}.r1cs`);
+  const wasmVirtualPath = path.join(wasmDir, `${circuitName}.wasm`);
+  const watVirtualPath = path.join(wasmDir, `${circuitName}.wat`);
 
   // Make the r1cs directory so it doesn't defer to nodefs for writing
   // but don't make the wasm directory because otherwise circom2 won't proceed
-  await ufs.promises.mkdir(r1csDir, { recursive: true });
+  await ufs.promises.mkdir(dir, { recursive: true });
 
   let stdout = "";
   let stderr = "";
@@ -287,6 +291,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
           if (stderr.endsWith("\n")) {
             const msg = stderr.trim();
             stderr = "";
+            logger.error(msg);
             throw new Error(msg);
           }
           return data.length;
@@ -297,6 +302,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
           if (stderr.endsWith("\n")) {
             const msg = stderr.trim();
             stderr = "";
+            logger.error(msg);
             throw new Error(msg);
           }
           return data.byteLength;
@@ -320,7 +326,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
   });
 
   const circom = new CircomRunner({
-    args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "-o", r1csDir],
+    args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "-o", dir],
     env: {},
     // Preopen from the root because we use absolute paths
     preopens: {
@@ -338,7 +344,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
 
   const r1csFastFile: MemFastFile = {
     type: "mem",
-    data: await ufs.promises.readFile(circuit.r1cs),
+    data: await ufs.promises.readFile(r1csVirtualPath),
   };
   const wasmFastFile: MemFastFile = {
     type: "mem",
