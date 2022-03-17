@@ -293,6 +293,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
           if (stderr.endsWith("\n")) {
             const msg = stderr.trim();
             stderr = "";
+            logger.error(msg);
             throw new Error(msg);
           }
           return data.length;
@@ -303,6 +304,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
           if (stderr.endsWith("\n")) {
             const msg = stderr.trim();
             stderr = "";
+            logger.error(msg);
             throw new Error(msg);
           }
           return data.byteLength;
