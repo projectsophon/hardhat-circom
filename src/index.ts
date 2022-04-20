@@ -286,9 +286,9 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
       if (fd == 2) {
         if (typeof data === "string") {
           stderr += data;
-          // This is a little fragile, but we assume the wasmer-js
-          // terminal character is a newline by itself
-          if (stderr.endsWith("\n")) {
+          // This is a little fragile, but we assume that circom2
+          // ends the failed compile with "previous errors were found"
+          if (stderr.includes("previous errors were found")) {
             const msg = stderr.trim();
             stderr = "";
             logger.error(msg);
@@ -297,9 +297,9 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
           return data.length;
         } else {
           stderr += new TextDecoder().decode(data);
-          // This is a little fragile, but we assume the wasmer-js
-          // terminal character is a newline by itself
-          if (stderr.endsWith("\n")) {
+          // This is a little fragile, but we assume that circom2
+          // ends the failed compile with "previous errors were found"
+          if (stderr.includes("previous errors were found")) {
             const msg = stderr.trim();
             stderr = "";
             logger.error(msg);
