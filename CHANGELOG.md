@@ -2,10 +2,9 @@
 
 ### [3.0.2](https://www.github.com/projectsophon/hardhat-circom/compare/v3.0.1...v3.0.2) (2022-04-20)
 
-
 ### Bug Fixes
 
-* Print entirety of circom2 errors ([#47](https://www.github.com/projectsophon/hardhat-circom/issues/47)) ([669bfc7](https://www.github.com/projectsophon/hardhat-circom/commit/669bfc7bbcec8b3fcd6cf2a8978235e4d18acea1))
+- Print entirety of circom2 errors ([#47](https://www.github.com/projectsophon/hardhat-circom/issues/47)) ([669bfc7](https://www.github.com/projectsophon/hardhat-circom/commit/669bfc7bbcec8b3fcd6cf2a8978235e4d18acea1))
 
 ### [3.0.1](https://www.github.com/projectsophon/hardhat-circom/compare/v3.0.0...v3.0.1) (2022-03-17)
 
