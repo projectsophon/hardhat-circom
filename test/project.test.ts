@@ -126,9 +126,12 @@ describe("Hardhat Circom", function () {
       assertPathEqualsAbsolute(third.input, "/circuits/input.json");
     });
 
-    it("Applies override inputBasePath and with required ptau name", function () {
+    it("Downloads URL ptau and outputs into artifacts cache", function () {
       const { ptau } = this.hre.config.circom;
-      assertPathEqualsAbsolute(ptau, "/circuits/pot15_final.ptau");
+      assertPathEqualsAbsolute(
+        ptau,
+        "/artifacts/circom/hermezptau.blob.core.windows.net_ptau_powersOfTau28_hez_final_15.ptau"
+      );
     });
 
     it("Should override outputBasePath and wasm name", function () {

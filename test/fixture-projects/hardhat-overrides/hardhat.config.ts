@@ -13,7 +13,7 @@ const config: HardhatUserConfig = {
   circom: {
     inputBasePath: "/circuits",
     outputBasePath: "/client/public",
-    ptau: "pot15_final.ptau",
+    ptau: "https://hermezptau.blob.core.windows.net/ptau/powersOfTau28_hez_final_15.ptau",
     circuits: [
       {
         name: "biomebase",
