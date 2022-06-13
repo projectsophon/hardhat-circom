@@ -139,7 +139,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
   const ptauIsUrl = ptau.startsWith("http://") || ptau.startsWith("https://");
   let normalizedPtauPath: string;
   if (ptauIsUrl) {
-    const ptauFile = ptau.replace(/^(http:|https:)\/\//, "").replace(new RegExp(path.sep, "g"), "_");
+    const ptauFile = ptau.replace(/^(http:|https:)\/\//, "").replace(/\//g, "_");
     const artifactPath = path.join(config.paths.artifacts, "circom");
     normalizedPtauPath = path.join(artifactPath, ptauFile);
   } else {
