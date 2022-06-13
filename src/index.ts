@@ -140,6 +140,7 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
   let normalizedPtauPath: string;
   if (ptauIsUrl) {
     const ptauFile = ptau.replace(/^(http:|https:)\/\//, "").replace(/\//g, "_");
+    // TODO: This is used here and as the debug path. That should probably be normalized into the config
     const artifactPath = path.join(config.paths.artifacts, "circom");
     normalizedPtauPath = path.join(artifactPath, ptauFile);
   } else {
