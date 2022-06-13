@@ -4,12 +4,13 @@ import * as fs from "fs/promises";
 import * as nodefs from "fs";
 import { ufs } from "@phated/unionfs";
 import { Volume, createFsFromVolume } from "memfs";
-import { existsSync } from "fs";
+import { existsSync, createWriteStream } from "fs";
 import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
 import { HardhatPluginError } from "hardhat/plugins";
 import camelcase from "camelcase";
 import shimmer from "shimmer";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
+import { stream } from "undici";
 
 import logger from "./logger";
 import snarkjs from "./snarkjs";
@@ -92,6 +93,7 @@ export interface CircomConfig {
   inputBasePath: string;
   outputBasePath: string;
   ptau: string;
+  ptauDownload: string | undefined;
   circuits: CircomCircuitConfig[];
 }
 
@@ -134,12 +136,21 @@ extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) =>
   const normalizedInputBasePath = normalize(root, inputBasePath) ?? defaultInputBasePath;
   const normalizedOutputBasePath = normalize(root, outputBasePath) ?? defaultOutputBasePath;
 
-  const normalizedPtauPath = path.resolve(normalizedInputBasePath, ptau);
+  const ptauIsUrl = ptau.startsWith("http://") || ptau.startsWith("https://");
+  let normalizedPtauPath: string;
+  if (ptauIsUrl) {
+    const ptauFile = ptau.replace(/^(http:|https:)\/\//, "").replace(/\//g, "_");
+    const artifactPath = path.join(config.paths.artifacts, "circom");
+    normalizedPtauPath = path.join(artifactPath, ptauFile);
+  } else {
+    normalizedPtauPath = path.resolve(normalizedInputBasePath, ptau);
+  }
 
   config.circom = {
     inputBasePath: normalizedInputBasePath,
     outputBasePath: normalizedOutputBasePath,
     ptau: normalizedPtauPath,
+    ptauDownload: ptauIsUrl ? ptau : undefined,
     circuits: [],
   };
 
@@ -544,11 +555,22 @@ async function circomCompile(
   { deterministic, debug, circuit: onlyCircuitNamed }: { deterministic: boolean; debug: boolean; circuit?: string },
   hre: HardhatRuntimeEnvironment
 ) {
-  const debugPath = path.join(hre.config.paths.artifacts, "circom");
-  if (debug) {
-    await fs.mkdir(path.join(debugPath), { recursive: true });
+  const artifactPath = path.join(hre.config.paths.artifacts, "circom");
+  const { ptauDownload } = hre.config.circom;
+  if (debug || ptauDownload) {
+    await fs.mkdir(path.join(artifactPath), { recursive: true });
   }
 
+  if (ptauDownload) {
+    if (existsSync(hre.config.circom.ptau)) {
+      logger.info(`Using cached Powers of Tau file at ${hre.config.circom.ptau}`);
+    } else {
+      logger.info(`Downloading Powers of Tau file from ${ptauDownload}`);
+      await stream(ptauDownload, { method: "GET", opaque: { path: hre.config.circom.ptau } }, ({ opaque }) =>
+        createWriteStream((opaque as { path: string }).path)
+      );
+    }
+  }
   const ptau = await fs.readFile(hre.config.circom.ptau);
 
   const zkeys: ZkeyFastFile[] = [];
@@ -564,7 +586,7 @@ async function circomCompile(
     try {
       compilerOutput = await compiler({
         circuit,
-        debug: debug ? { path: debugPath } : undefined,
+        debug: debug ? { path: artifactPath } : undefined,
       });
     } catch (err) {
       throw new HardhatPluginError(PLUGIN_NAME, `Unable to compile circuit named: ${circuit.name}`, err as Error);
@@ -578,7 +600,7 @@ async function circomCompile(
 
     const zkey = await snarker({
       circuit,
-      debug: debug ? { path: debugPath } : undefined,
+      debug: debug ? { path: artifactPath } : undefined,
       wasm,
       r1cs,
       ptau,
