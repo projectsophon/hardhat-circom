@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://www.github.com/projectsophon/hardhat-circom/compare/v3.0.2...v3.1.0) (2022-06-13)
+
+
+### Features
+
+* Download URL ptau file & store in cache directory ([#56](https://www.github.com/projectsophon/hardhat-circom/issues/56)) ([6f0ef17](https://www.github.com/projectsophon/hardhat-circom/commit/6f0ef176fd3de68ee711c8a06eb356db86b20a2c))
+
 ### [3.0.2](https://www.github.com/projectsophon/hardhat-circom/compare/v3.0.1...v3.0.2) (2022-04-20)
 
 ### Bug Fixes
