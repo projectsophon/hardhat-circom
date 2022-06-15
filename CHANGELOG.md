@@ -2,10 +2,9 @@
 
 ## [3.2.0](https://www.github.com/projectsophon/hardhat-circom/compare/v3.1.0...v3.2.0) (2022-06-15)
 
-
 ### Features
 
-* Implement circuit testing utilities ([#58](https://www.github.com/projectsophon/hardhat-circom/issues/58)) ([42af8ed](https://www.github.com/projectsophon/hardhat-circom/commit/42af8eda28e960d3a07bc9506b2e23f931462258))
+- Implement circuit testing utilities ([#58](https://www.github.com/projectsophon/hardhat-circom/issues/58)) ([42af8ed](https://www.github.com/projectsophon/hardhat-circom/commit/42af8eda28e960d3a07bc9506b2e23f931462258))
 
 ## [3.1.0](https://www.github.com/projectsophon/hardhat-circom/compare/v3.0.2...v3.1.0) (2022-06-13)
 
