@@ -64,7 +64,7 @@ declare module "hardhat/types/runtime" {
     };
     snarkjs: typeof snarkjs;
     circuitTest: {
-      setup: (circuitName: string) => Promise<CircuitTestUtils>;
+      setup: (circuitName: string, options: { debug: boolean }) => Promise<CircuitTestUtils>;
       teardown: () => Promise<void>;
     };
   }
@@ -126,11 +126,14 @@ extendEnvironment((hre) => {
   hre.circom = circom1Compiler;
   hre.snarkjs = snarkjs;
   hre.circuitTest = lazyObject(() => {
-    const testArtifactPath = path.join(hre.config.paths.artifacts, "circom/test");
+    let hasDebug = false;
+    const testDebugPath = path.join(hre.config.paths.artifacts, "circom/test");
 
     return {
-      async setup(whichCircuit: string) {
-        await fs.mkdir(path.join(testArtifactPath), { recursive: true });
+      async setup(whichCircuit: string, { debug }: { debug: boolean }) {
+        if (debug) {
+          hasDebug = true;
+        }
 
         for (const circuit of hre.config.circom.circuits) {
           if (whichCircuit !== circuit.name) {
@@ -144,7 +147,7 @@ extendEnvironment((hre) => {
           try {
             compilerOutput = await compiler({
               circuit,
-              debug: { path: testArtifactPath },
+              debug: debug ? { path: testDebugPath } : undefined,
             });
           } catch (err) {
             throw new HardhatPluginError(PLUGIN_NAME, `Unable to compile circuit named: ${circuit.name}`, err as Error);
@@ -156,7 +159,9 @@ extendEnvironment((hre) => {
         throw new HardhatPluginError(PLUGIN_NAME, `Unable to locate circuit named: ${whichCircuit}`);
       },
       async teardown() {
-        await fs.rm(testArtifactPath, { recursive: true });
+        if (hasDebug) {
+          await fs.rm(testDebugPath, { recursive: true });
+        }
       },
     };
   });
