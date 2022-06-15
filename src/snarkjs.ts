@@ -31,6 +31,12 @@ const wrappedSnark = {
     ): Promise<boolean> {
       return snarkjs.groth16.verify(vk_verifier, publicSignals, proof, logger);
     },
+    exportSolidityCallData: async function groth16ExportSolidityCallData(
+      proof: unknown,
+      publicInputs: unknown
+    ): Promise<string> {
+      return snarkjs.groth16.exportSolidityCallData(proof, publicInputs);
+    },
   },
   plonk: {
     fullProve: async function plonkFullProve(
@@ -63,6 +69,12 @@ const wrappedSnark = {
       logger = pluginLogger
     ): Promise<boolean> {
       return snarkjs.plonk.verify(vk_verifier, publicSignals, proof, logger);
+    },
+    exportSolidityCallData: async function plonkExportSolidityCallData(
+      proof: unknown,
+      publicInputs: unknown
+    ): Promise<string> {
+      return snarkjs.plonk.exportSolidityCallData(proof, publicInputs);
     },
   },
   powersOfTau: {
