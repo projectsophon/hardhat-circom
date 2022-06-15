@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.2.2](https://www.github.com/projectsophon/hardhat-circom/compare/v3.2.1...v3.2.2) (2022-06-15)
+
+
+### Bug Fixes
+
+* Add exportSolidityCallData to groth16 & plonk snarkjs bindings ([#63](https://www.github.com/projectsophon/hardhat-circom/issues/63)) ([318c405](https://www.github.com/projectsophon/hardhat-circom/commit/318c405888e99a658f5254d8063d5b8097098dbe))
+
 ### [3.2.1](https://www.github.com/projectsophon/hardhat-circom/compare/v3.2.0...v3.2.1) (2022-06-15)
 
 ### Bug Fixes

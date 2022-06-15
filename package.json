@@ -1,6 +1,6 @@
 {
   "name": "hardhat-circom",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Hardhat plugin to integrate Circom and SnarkJS into your build process.",
   "author": "Jacob Rosenthal <jacobrosenthal@gmail.com>",
   "repository": "projectsophon/hardhat-circom",
