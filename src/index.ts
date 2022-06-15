@@ -42,7 +42,7 @@ interface HasToString {
   toString: () => string;
 }
 
-type ConstraintElement = Readonly<{ [key: number]: Uint8Array | BigInt }>;
+type ConstraintElement = Readonly<{ [key: number]: BigInt }>;
 type Constraint = Readonly<[ConstraintElement, ConstraintElement, ConstraintElement]>;
 
 interface MemFastFile {
@@ -785,7 +785,7 @@ export class CircuitTestUtils {
     this.sym = sym;
   }
 
-  public async calculateWitness(input: unknown, sanityCheck: boolean): Promise<(Uint8Array | BigInt)[]> {
+  public async calculateWitness(input: unknown, sanityCheck: boolean): Promise<BigInt[]> {
     const wc = await WitnessCalculatorBuilder(this.wasm.data);
 
     return wc.calculateWitness(input, sanityCheck);
