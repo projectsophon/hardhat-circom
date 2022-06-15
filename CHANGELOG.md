@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.2.1](https://www.github.com/projectsophon/hardhat-circom/compare/v3.2.0...v3.2.1) (2022-06-15)
+
+
+### Bug Fixes
+
+* Upgrade r1csfile ([#61](https://www.github.com/projectsophon/hardhat-circom/issues/61)) ([9c24c87](https://www.github.com/projectsophon/hardhat-circom/commit/9c24c87da3528bf41b66d50c9cd264b2155a6bc5))
+
 ## [3.2.0](https://www.github.com/projectsophon/hardhat-circom/compare/v3.1.0...v3.2.0) (2022-06-15)
 
 ### Features
