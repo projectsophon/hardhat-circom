@@ -3117,6 +3117,16 @@ r1csfile@0.0.36:
     fastfile "0.0.20"
     ffjavascript "0.2.55"
 
+r1csfile@0.0.37:
+  version "0.0.37"
+  resolved "https://registry.yarnpkg.com/r1csfile/-/r1csfile-0.0.37.tgz#be0d2c5d28f17ce18962195371ef28ff06fb4737"
+  integrity sha512-6Yb2SqWU59t7wWUX0/4BvVtWAN7RwkIobFJ90+RD3MB2Y5gb5aBGkFWJxDLqqWQbmQnv3y0ekpfDxbtNNAgrGw==
+  dependencies:
+    "@iden3/bigarray" "0.0.2"
+    "@iden3/binfileutils" "0.0.11"
+    fastfile "0.0.20"
+    ffjavascript "0.2.55"
+
 randombytes@^2.0.5, randombytes@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/randombytes/-/randombytes-2.1.0.tgz#df6f84372f0270dc65cdf6291349ab7a473d4f2a"

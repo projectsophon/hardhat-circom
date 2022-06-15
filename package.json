@@ -34,7 +34,7 @@
     "debug": "^4.3.3",
     "ffjavascript": "0.2.55",
     "memfs": "^3.4.1",
-    "r1csfile": "0.0.16",
+    "r1csfile": "0.0.37",
     "shimmer": "^1.2.1",
     "snarkjs": "^0.4.14",
     "undici": "^5.4.0"

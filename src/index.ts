@@ -23,9 +23,9 @@ import { CircomRunner, bindings } from "circom2";
 // @ts-ignore because they don't ship types
 import { WitnessCalculatorBuilder } from "circom_runtime";
 // @ts-ignore because they don't ship types
-import { load as readR1cs } from "r1csfile";
+import { readR1cs } from "r1csfile";
 // @ts-ignore because they don't ship types
-import { ZqField } from "ffjavascript";
+import { F1Field } from "ffjavascript";
 
 // Awaited taken from a newer TypeScript
 type Awaited<T> = T extends null | undefined
@@ -42,7 +42,7 @@ interface HasToString {
   toString: () => string;
 }
 
-type ConstraintElement = Readonly<{ [key: number]: Uint8Array | BigInt }>;
+type ConstraintElement = Readonly<{ [key: number]: BigInt }>;
 type Constraint = Readonly<[ConstraintElement, ConstraintElement, ConstraintElement]>;
 
 interface MemFastFile {
@@ -768,7 +768,7 @@ export class CircuitTestUtils {
     };
   };
 
-  private F?: ZqField;
+  private F?: F1Field;
   private constraints?: Constraint[];
 
   constructor({
@@ -785,7 +785,7 @@ export class CircuitTestUtils {
     this.sym = sym;
   }
 
-  public async calculateWitness(input: unknown, sanityCheck: boolean): Promise<(Uint8Array | BigInt)[]> {
+  public async calculateWitness(input: unknown, sanityCheck: boolean): Promise<BigInt[]> {
     const wc = await WitnessCalculatorBuilder(this.wasm.data);
 
     return wc.calculateWitness(input, sanityCheck);
@@ -814,9 +814,13 @@ export class CircuitTestUtils {
 
   public async loadConstraints(): Promise<NonNullable<CircuitTestUtils["constraints"]>> {
     if (!this.constraints) {
-      const r1cs = await readR1cs(this.r1cs, true, false);
+      const r1cs = await readR1cs(this.r1cs, {
+        loadConstraints: true,
+        loadMaps: false,
+        getFieldFromPrime: (p: unknown) => new F1Field(p),
+      });
 
-      this.F = new ZqField(r1cs.prime);
+      this.F = r1cs.F;
       this.constraints = r1cs.constraints;
     }
 
@@ -871,7 +875,7 @@ export class CircuitTestUtils {
       const F = this.F;
       let v = F.zero;
       for (const w in lc) {
-        v = F.add(v, F.mul(lc[w], witness[w]));
+        v = F.add(v, F.mul(lc[w], F.e(witness[w])));
       }
       return v;
     };
