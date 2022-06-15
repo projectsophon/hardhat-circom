@@ -156,7 +156,7 @@ extendEnvironment((hre) => {
         throw new HardhatPluginError(PLUGIN_NAME, `Unable to locate circuit named: ${whichCircuit}`);
       },
       async teardown() {
-        await fs.rmdir(testArtifactPath);
+        await fs.rm(testArtifactPath, { recursive: true });
       },
     };
   });
