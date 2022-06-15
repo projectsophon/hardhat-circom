@@ -64,7 +64,7 @@ declare module "hardhat/types/runtime" {
     };
     snarkjs: typeof snarkjs;
     circuitTest: {
-      setup: (circuitName: string, options: { debug: boolean }) => Promise<CircuitTestUtils>;
+      setup: (circuitName: string, options?: { debug: boolean }) => Promise<CircuitTestUtils>;
       teardown: () => Promise<void>;
     };
   }
@@ -130,7 +130,7 @@ extendEnvironment((hre) => {
     const testDebugPath = path.join(hre.config.paths.artifacts, "circom/test");
 
     return {
-      async setup(whichCircuit: string, { debug }: { debug: boolean }) {
+      async setup(whichCircuit: string, { debug } = { debug: false }) {
         if (debug) {
           hasDebug = true;
         }
