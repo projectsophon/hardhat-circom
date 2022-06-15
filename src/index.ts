@@ -790,7 +790,7 @@ export class CircuitTestUtils {
     if (!this.symbols) {
       this.symbols = {};
 
-      const lines = this.sym.toString().split("\n");
+      const lines = this.sym.data.toString().split("\n");
       for (const line of lines) {
         const arr = line.split(",");
 
