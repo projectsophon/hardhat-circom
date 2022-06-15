@@ -26,11 +26,15 @@
   },
   "dependencies": {
     "@phated/unionfs": "^4.5.0",
+    "bl": "^5.0.0",
     "camelcase": "^6.3.0",
     "circom": "0.5.46",
     "circom2": "^0.2.1",
+    "circom_runtime": "0.1.18",
     "debug": "^4.3.3",
+    "ffjavascript": "0.2.55",
     "memfs": "^3.4.1",
+    "r1csfile": "0.0.16",
     "shimmer": "^1.2.1",
     "snarkjs": "^0.4.14",
     "undici": "^5.4.0"
@@ -42,6 +46,7 @@
     "@projectsophon/eslint-config": "0.0.2",
     "@projectsophon/prettier-config": "0.0.0",
     "@projectsophon/tsconfig": "0.0.0",
+    "@types/bl": "^5.0.2",
     "@types/chai": "^4.3.0",
     "@types/debug": "^4.1.7",
     "@types/mocha": "^8.2.0",
