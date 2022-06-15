@@ -23,7 +23,7 @@ import { CircomRunner, bindings } from "circom2";
 // @ts-ignore because they don't ship types
 import { WitnessCalculatorBuilder } from "circom_runtime";
 // @ts-ignore because they don't ship types
-import { readR1cs } from "r1csfile";
+import { load as readR1cs } from "r1csfile";
 // @ts-ignore because they don't ship types
 import { ZqField } from "ffjavascript";
 
