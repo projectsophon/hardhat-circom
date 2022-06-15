@@ -860,7 +860,6 @@ export class CircuitTestUtils {
   }
 
   public async checkConstraints(witness: BigInt[]): Promise<void> {
-    console.log(witness);
     const constraints = await this.loadConstraints();
 
     const evalLC = (lc: ConstraintElement) => {
