@@ -2,15 +2,17 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as fs from "fs/promises";
 import * as nodefs from "fs";
+import assert from "assert";
 import { ufs } from "@phated/unionfs";
 import { Volume, createFsFromVolume } from "memfs";
 import { existsSync, createWriteStream } from "fs";
 import { extendConfig, extendEnvironment, task, subtask, types } from "hardhat/config";
-import { HardhatPluginError } from "hardhat/plugins";
+import { HardhatPluginError, lazyObject } from "hardhat/plugins";
 import camelcase from "camelcase";
 import shimmer from "shimmer";
 import type { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from "hardhat/types";
 import { stream } from "undici";
+import BufferList from "bl";
 
 import logger from "./logger";
 import snarkjs from "./snarkjs";
@@ -18,16 +20,12 @@ import snarkjs from "./snarkjs";
 import * as circom1Compiler from "circom";
 // @ts-ignore because they don't ship types
 import { CircomRunner, bindings } from "circom2";
-
-declare module "hardhat/types/runtime" {
-  interface HardhatRuntimeEnvironment {
-    circom: {
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      [key: string]: Function;
-    };
-    snarkjs: typeof snarkjs;
-  }
-}
+// @ts-ignore because they don't ship types
+import { WitnessCalculatorBuilder } from "circom_runtime";
+// @ts-ignore because they don't ship types
+import { load as readR1cs } from "r1csfile";
+// @ts-ignore because they don't ship types
+import { ZqField } from "ffjavascript";
 
 // Awaited taken from a newer TypeScript
 type Awaited<T> = T extends null | undefined
@@ -40,10 +38,37 @@ type Awaited<T> = T extends null | undefined
     : never // the argument to `then` was not callable
   : T; // non-object or non-thenable
 
-extendEnvironment((hre) => {
-  hre.circom = circom1Compiler;
-  hre.snarkjs = snarkjs;
-});
+interface HasToString {
+  toString: () => string;
+}
+
+type ConstraintElement = Readonly<{ [key: number]: Uint8Array | BigInt }>;
+type Constraint = Readonly<[ConstraintElement, ConstraintElement, ConstraintElement]>;
+
+interface MemFastFile {
+  type: "mem";
+  data?: Uint8Array;
+}
+
+export interface ZkeyFastFile {
+  type: "mem";
+  name: string;
+  data: Uint8Array;
+}
+
+declare module "hardhat/types/runtime" {
+  interface HardhatRuntimeEnvironment {
+    circom: {
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      [key: string]: Function;
+    };
+    snarkjs: typeof snarkjs;
+    circuitTest: {
+      setup: (circuitName: string, options?: { debug: boolean }) => Promise<CircuitTestUtils>;
+      teardown: () => Promise<void>;
+    };
+  }
+}
 
 // Add our types to the Hardhat config
 declare module "hardhat/types/config" {
@@ -97,20 +122,54 @@ export interface CircomConfig {
   circuits: CircomCircuitConfig[];
 }
 
+extendEnvironment((hre) => {
+  hre.circom = circom1Compiler;
+  hre.snarkjs = snarkjs;
+  hre.circuitTest = lazyObject(() => {
+    let hasDebug = false;
+    const testDebugPath = path.join(hre.config.paths.artifacts, "circom/test");
+
+    return {
+      async setup(whichCircuit: string, { debug } = { debug: false }) {
+        if (debug) {
+          hasDebug = true;
+        }
+
+        for (const circuit of hre.config.circom.circuits) {
+          if (whichCircuit !== circuit.name) {
+            continue;
+          }
+
+          const compiler = circuit.version === 1 ? circom1 : circom2;
+
+          let compilerOutput: Awaited<ReturnType<typeof compiler>>;
+
+          try {
+            compilerOutput = await compiler({
+              circuit,
+              debug: debug ? { path: testDebugPath } : undefined,
+            });
+          } catch (err) {
+            throw new HardhatPluginError(PLUGIN_NAME, `Unable to compile circuit named: ${circuit.name}`, err as Error);
+          }
+
+          return new CircuitTestUtils(compilerOutput);
+        }
+
+        throw new HardhatPluginError(PLUGIN_NAME, `Unable to locate circuit named: ${whichCircuit}`);
+      },
+      async teardown() {
+        if (hasDebug) {
+          await fs.rm(testDebugPath, { recursive: true });
+        }
+      },
+    };
+  });
+});
+
 export const PLUGIN_NAME = "hardhat-circom";
 export const TASK_CIRCOM = "circom";
 export const TASK_CIRCOM_TEMPLATE = "circom:template";
-
-interface MemFastFile {
-  type: "mem";
-  data?: Uint8Array;
-}
-
-export interface ZkeyFastFile {
-  type: "mem";
-  name: string;
-  data: Uint8Array;
-}
 
 extendConfig((config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
   const { root } = config.paths;
@@ -198,11 +257,18 @@ async function circom1({ circuit, debug }: { circuit: CircomCircuitConfig; debug
   const r1csFastFile: MemFastFile = { type: "mem" };
   const wasmFastFile: MemFastFile = { type: "mem" };
   const watFastFile: MemFastFile = { type: "mem" };
+  const symWriteStream = new BufferList();
   await circom1Compiler.compiler(circuit.circuit, {
     watFileName: watFastFile,
     wasmFileName: wasmFastFile,
     r1csFileName: r1csFastFile,
+    symWriteStream,
   });
+
+  const symFastFile: MemFastFile = {
+    type: "mem",
+    data: symWriteStream.slice(),
+  };
 
   if (!r1csFastFile.data) {
     throw new HardhatPluginError(PLUGIN_NAME, `Unable to generate r1cs for circuit named: ${circuit.name}`);
@@ -219,12 +285,17 @@ async function circom1({ circuit, debug }: { circuit: CircomCircuitConfig; debug
     if (watFastFile.data) {
       await fs.writeFile(path.join(debug.path, `${circuit.name}.wat`), watFastFile.data);
     }
+    // The .sym file is only used for debug
+    if (symFastFile.data) {
+      await fs.writeFile(path.join(debug.path, `${circuit.name}.sym`), symFastFile.data);
+    }
   }
 
   return {
     // the `.data` property is checked above
     r1cs: r1csFastFile as Required<MemFastFile>,
     wasm: wasmFastFile as Required<MemFastFile>,
+    sym: symFastFile as Required<MemFastFile>,
   } as const;
 }
 
@@ -250,6 +321,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
 
   // We build virtual paths here because circom2 outputs these into dumb places
   const r1csVirtualPath = path.join(dir, `${circuitName}.r1cs`);
+  const symVirtualPath = path.join(dir, `${circuitName}.sym`);
   const wasmVirtualPath = path.join(wasmDir, `${circuitName}.wasm`);
   const watVirtualPath = path.join(wasmDir, `${circuitName}.wat`);
 
@@ -338,7 +410,7 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
   });
 
   const circom = new CircomRunner({
-    args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "-o", dir],
+    args: [circuit.circuit, "--r1cs", "--wat", "--wasm", "--sym", "-o", dir],
     env: {},
     // Preopen from the root because we use absolute paths
     preopens: {
@@ -357,6 +429,10 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
   const r1csFastFile: MemFastFile = {
     type: "mem",
     data: await ufs.promises.readFile(r1csVirtualPath),
+  };
+  const symFastFile: MemFastFile = {
+    type: "mem",
+    data: await ufs.promises.readFile(symVirtualPath),
   };
   const wasmFastFile: MemFastFile = {
     type: "mem",
@@ -382,12 +458,17 @@ async function circom2({ circuit, debug }: { circuit: CircomCircuitConfig; debug
     if (watFastFile.data) {
       await fs.writeFile(path.join(debug.path, `${circuit.name}.wat`), watFastFile.data);
     }
+    // The .sym file is only used for debug
+    if (symFastFile.data) {
+      await fs.writeFile(path.join(debug.path, `${circuit.name}.sym`), symFastFile.data);
+    }
   }
 
   return {
     // the `.data` property is checked above
     r1cs: r1csFastFile as Required<MemFastFile>,
     wasm: wasmFastFile as Required<MemFastFile>,
+    sym: symFastFile as Required<MemFastFile>,
   } as const;
 }
 
@@ -669,4 +750,160 @@ async function circomTemplate({ zkeys }: { zkeys: ZkeyFastFile[] }, hre: Hardhat
 
     await fs.writeFile(verifier, finalSol);
   }
+}
+
+// Testing utility
+// Based on https://github.com/iden3/circom_tester/blob/3e9963ce7d371c15978674331cff1d14027d209d/wasm/tester.js
+// but adapted for use in the hardhat-circom infrastructure
+export class CircuitTestUtils {
+  private r1cs: Required<MemFastFile>;
+  private wasm: Required<MemFastFile>;
+  private sym: Required<MemFastFile>;
+
+  private symbols?: {
+    [key: string]: {
+      labelIdx: number;
+      varIdx: number;
+      componentIdx: number;
+    };
+  };
+
+  private F?: ZqField;
+  private constraints?: Constraint[];
+
+  constructor({
+    r1cs,
+    wasm,
+    sym,
+  }: {
+    r1cs: Required<MemFastFile>;
+    wasm: Required<MemFastFile>;
+    sym: Required<MemFastFile>;
+  }) {
+    this.r1cs = r1cs;
+    this.wasm = wasm;
+    this.sym = sym;
+  }
+
+  public async calculateWitness(input: unknown, sanityCheck: boolean): Promise<(Uint8Array | BigInt)[]> {
+    const wc = await WitnessCalculatorBuilder(this.wasm.data);
+
+    return wc.calculateWitness(input, sanityCheck);
+  }
+
+  public async loadSymbols(): Promise<NonNullable<CircuitTestUtils["symbols"]>> {
+    if (!this.symbols) {
+      this.symbols = {};
+
+      const lines = this.sym.data.toString().split("\n");
+      for (const line of lines) {
+        const arr = line.split(",");
+
+        if (arr.length != 4) continue;
+
+        this.symbols[arr[3]] = {
+          labelIdx: Number(arr[0]),
+          varIdx: Number(arr[1]),
+          componentIdx: Number(arr[2]),
+        };
+      }
+    }
+
+    return this.symbols;
+  }
+
+  public async loadConstraints(): Promise<NonNullable<CircuitTestUtils["constraints"]>> {
+    if (!this.constraints) {
+      const r1cs = await readR1cs(this.r1cs, true, false);
+
+      this.F = new ZqField(r1cs.prime);
+      this.constraints = r1cs.constraints;
+    }
+
+    return this.constraints as NonNullable<CircuitTestUtils["constraints"]>;
+  }
+
+  public async assertOut(actualOut: HasToString[], expectedOut: HasToString): Promise<void> {
+    const symbols = await this.loadSymbols();
+
+    const checkObject = (prefix: string, eOut: HasToString) => {
+      if (Array.isArray(eOut)) {
+        for (let i = 0; i < eOut.length; i++) {
+          checkObject(`${prefix}[${i}]`, eOut[i]);
+        }
+      } else if (isPlainObject(eOut)) {
+        for (const k in eOut) {
+          checkObject(`${prefix}.${k}`, eOut[k]);
+        }
+      } else {
+        if (typeof symbols[prefix] == "undefined") {
+          assert(false, `Output variable not defined: ${prefix}`);
+        }
+        const ba = actualOut[symbols[prefix].varIdx].toString();
+        const be = eOut.toString();
+        assert.strictEqual(ba, be, prefix);
+      }
+    };
+
+    checkObject("main", expectedOut);
+  }
+
+  public async getDecoratedOutput(witness: HasToString[]): Promise<string> {
+    const symbols = await this.loadSymbols();
+
+    const lines = [];
+    for (const n in symbols) {
+      let v;
+      if (typeof witness[symbols[n].varIdx] !== "undefined") {
+        v = witness[symbols[n].varIdx].toString();
+      } else {
+        v = "undefined";
+      }
+      lines.push(`${n} --> ${v}`);
+    }
+    return lines.join("\n");
+  }
+
+  public async checkConstraints(witness: BigInt[]): Promise<void> {
+    const constraints = await this.loadConstraints();
+
+    const evalLC = (lc: ConstraintElement) => {
+      const F = this.F;
+      let v = F.zero;
+      for (const w in lc) {
+        v = F.add(v, F.mul(lc[w], witness[w]));
+      }
+      return v;
+    };
+
+    const checkConstraint = (constraint: Constraint) => {
+      const F = this.F;
+      const a = evalLC(constraint[0]);
+      const b = evalLC(constraint[1]);
+      const c = evalLC(constraint[2]);
+      assert(F.isZero(F.sub(F.mul(a, b), c)), "Constraint doesn't match");
+    };
+
+    for (let i = 0; i < constraints.length; i++) {
+      checkConstraint(constraints[i]);
+    }
+  }
+}
+
+// Some helpers
+
+function isPlainObject(val: unknown): val is { [key: string]: HasToString } {
+  if (typeof val === "object") {
+    if (val != null) {
+      if (val.constructor.name === "Object") {
+        for (const v of Object.values(val)) {
+          if (typeof v.toString !== "function") {
+            return false;
+          }
+        }
+        return true;
+      }
+    }
+  }
+  return false;
 }
