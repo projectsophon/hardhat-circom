@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://www.github.com/projectsophon/hardhat-circom/compare/v3.2.2...v3.3.0) (2022-06-21)
+
+
+### Features
+
+* Add calculatedLabeledWitness testing utility ([#67](https://www.github.com/projectsophon/hardhat-circom/issues/67)) ([3124c02](https://www.github.com/projectsophon/hardhat-circom/commit/3124c0207f9b7f973f1990652cee00a65f4d4b5f))
+
 ### [3.2.2](https://www.github.com/projectsophon/hardhat-circom/compare/v3.2.1...v3.2.2) (2022-06-15)
 
 ### Bug Fixes
