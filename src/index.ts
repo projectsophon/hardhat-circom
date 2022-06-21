@@ -2,6 +2,7 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as fs from "fs/promises";
 import * as nodefs from "fs";
+import { inspect } from "util";
 import assert from "assert";
 import { ufs } from "@phated/unionfs";
 import { Volume, createFsFromVolume } from "memfs";
@@ -791,6 +792,23 @@ export class CircuitTestUtils {
     return wc.calculateWitness(input, sanityCheck);
   }
 
+  public async calculateLabeledWitness(input: unknown, sanityCheck: boolean): Promise<LabeledWitness> {
+    const wc = await WitnessCalculatorBuilder(this.wasm.data);
+    const witness = await wc.calculateWitness(input, sanityCheck);
+    const symbols = await this.loadSymbols();
+    const labels: { [label: string]: string | undefined } = {};
+
+    for (const n in symbols) {
+      let v = undefined;
+      if (typeof witness[symbols[n].varIdx] !== "undefined") {
+        v = witness[symbols[n].varIdx].toString();
+      }
+      labels[n] = v;
+    }
+
+    return new LabeledWitness(witness, labels);
+  }
+
   public async loadSymbols(): Promise<NonNullable<CircuitTestUtils["symbols"]>> {
     if (!this.symbols) {
       this.symbols = {};
@@ -891,6 +909,31 @@ export class CircuitTestUtils {
     for (let i = 0; i < constraints.length; i++) {
       checkConstraint(constraints[i]);
     }
+  }
+}
+
+export class LabeledWitness implements ArrayLike<BigInt> {
+  length: number;
+
+  [label: string]: string | undefined | any;
+
+  private _labels: { [label: string]: string | undefined };
+
+  constructor(witness: BigInt[], labels: { [label: string]: string | undefined }) {
+    this.length = witness.length;
+
+    for (const [idx, val] of witness.entries()) {
+      this[idx] = val;
+    }
+
+    this._labels = labels;
+    for (const [label, val] of Object.entries(labels)) {
+      this[label] = val;
+    }
+  }
+  [Symbol.toStringTag] = "LabeledWitness";
+  [inspect.custom](): { [label: string]: string | undefined } {
+    return this._labels;
   }
 }
 
