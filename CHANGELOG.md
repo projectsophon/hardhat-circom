@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.3.1](https://www.github.com/projectsophon/hardhat-circom/compare/v3.3.0...v3.3.1) (2022-07-12)
+
+
+### Bug Fixes
+
+* Access ptau with filename to support sizes >2gb ([#70](https://www.github.com/projectsophon/hardhat-circom/issues/70)) ([2819e1b](https://www.github.com/projectsophon/hardhat-circom/commit/2819e1bd037708f21405386b6ba72938758e370c))
+
 ## [3.3.0](https://www.github.com/projectsophon/hardhat-circom/compare/v3.2.2...v3.3.0) (2022-06-21)
 
 
