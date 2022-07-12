@@ -655,6 +655,10 @@ async function circomCompile(
     }
   }
 
+  if (!existsSync(hre.config.circom.ptau)) {
+    throw new HardhatPluginError(PLUGIN_NAME, `Could not locate ptau file: ${hre.config.circom.ptau}`);
+  }
+
   const zkeys: ZkeyFastFile[] = [];
   for (const circuit of hre.config.circom.circuits) {
     if (onlyCircuitNamed && onlyCircuitNamed !== circuit.name) {
