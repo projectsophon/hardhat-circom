@@ -486,7 +486,7 @@ async function groth16({
   debug?: { path: string };
   wasm: Required<MemFastFile>;
   r1cs: Required<MemFastFile>;
-  ptau: Buffer;
+  ptau: string;
 }): Promise<ZkeyFastFile> {
   const input = await getInputJson(circuit.input);
 
@@ -573,7 +573,7 @@ async function plonk({
   debug?: { path: string };
   wasm: Required<MemFastFile>;
   r1cs: Required<MemFastFile>;
-  ptau: Buffer;
+  ptau: string;
 }): Promise<ZkeyFastFile> {
   const input = await getInputJson(circuit.input);
 
@@ -654,7 +654,6 @@ async function circomCompile(
       );
     }
   }
-  const ptau = await fs.readFile(hre.config.circom.ptau);
 
   const zkeys: ZkeyFastFile[] = [];
   for (const circuit of hre.config.circom.circuits) {
@@ -686,7 +685,7 @@ async function circomCompile(
       debug: debug ? { path: artifactPath } : undefined,
       wasm,
       r1cs,
-      ptau,
+      ptau: hre.config.circom.ptau,
       // Only used by groth16
       deterministic,
     });
