@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.3.2](https://www.github.com/projectsophon/hardhat-circom/compare/v3.3.1...v3.3.2) (2022-11-03)
+
+
+### Bug Fixes
+
+* Update dependencies to ensure latest circom2 is working ([#73](https://www.github.com/projectsophon/hardhat-circom/issues/73)) ([818b6a4](https://www.github.com/projectsophon/hardhat-circom/commit/818b6a441bfa27cf53913c92778adb4832b781c3))
+
 ### [3.3.1](https://www.github.com/projectsophon/hardhat-circom/compare/v3.3.0...v3.3.1) (2022-07-12)
 
 
