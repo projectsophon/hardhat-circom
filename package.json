@@ -26,18 +26,18 @@
   },
   "dependencies": {
     "@phated/unionfs": "^4.5.0",
-    "bl": "^5.0.0",
+    "bl": "^6.0.0",
     "camelcase": "^6.3.0",
     "circom": "0.5.46",
-    "circom2": "^0.2.1",
-    "circom_runtime": "0.1.18",
-    "debug": "^4.3.3",
-    "ffjavascript": "0.2.55",
-    "memfs": "^3.4.1",
-    "r1csfile": "0.0.37",
+    "circom2": "^0.2.10",
+    "circom_runtime": "0.1.21",
+    "debug": "^4.3.4",
+    "ffjavascript": "0.2.56",
+    "memfs": "^3.4.8",
+    "r1csfile": "0.0.41",
     "shimmer": "^1.2.1",
-    "snarkjs": "^0.4.14",
-    "undici": "^5.4.0"
+    "snarkjs": "^0.5.0",
+    "undici": "^5.12.0"
   },
   "peerDependencies": {
     "hardhat": "^2.0.0"
