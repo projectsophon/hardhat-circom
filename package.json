@@ -29,7 +29,7 @@
     "bl": "^6.0.0",
     "camelcase": "^6.3.0",
     "circom": "0.5.46",
-    "circom2": "^0.2.10",
+    "circom2": "^0.2.16",
     "circom_runtime": "0.1.21",
     "debug": "^4.3.4",
     "ffjavascript": "0.2.56",
