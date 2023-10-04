@@ -30,7 +30,7 @@
     "camelcase": "^6.3.0",
     "circom": "0.5.46",
     "circom2": "0.2.12",
-    "circom_runtime": "0.1.21",
+    "circom_runtime": "git+ssh://git@github.com/okwme/circom_runtime.git",
     "debug": "^4.3.4",
     "ffjavascript": "0.2.56",
     "memfs": "^3.4.8",
